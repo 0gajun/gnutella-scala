@@ -1,21 +1,24 @@
 package descriptor
 
 import java.nio.ByteBuffer
+import java.util.UUID
 
 import org.apache.commons.codec.binary.Hex
 
-class DescriptorHeader() {
+abstract class DescriptorHeader() {
   private val headerSize = 23
 
-  var descriptorId: String = _
-  var payloadDescriptor: Int = _
+  private val descriptorId: String = UUID.randomUUID().toString.replace("-", "")
+  protected var payloadDescriptor: Int
   // unsigned
   var ttl: Int = _
   // unsigned
   var hops: Int = _
-  var payloadLength: Int = _
 
-  // little endian
+  // フィールドには存在するが，抽象メソッドにより子クラスで計算させる
+  // var payloadLength: Int = _
+  def payloadLength: Int
+
   def convertHeaderToByteArray(): Array[Byte] = {
     val array: Array[Byte] = new Array[Byte](headerSize)
     var offset = headerSize - 1
@@ -41,7 +44,6 @@ class DescriptorHeader() {
   def toByteArray() = {
     convertHeaderToByteArray()
   }
-
 }
 
 object DescriptorHeader {
