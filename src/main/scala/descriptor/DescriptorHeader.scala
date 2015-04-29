@@ -41,7 +41,7 @@ abstract class DescriptorHeader() {
     array
   }
 
-  def toByteArray(): Unit
+  def toByteArray(): Array[Byte]
 }
 
 object DescriptorHeader {
