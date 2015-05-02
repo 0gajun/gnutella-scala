@@ -8,7 +8,7 @@ import org.apache.commons.codec.binary.Hex
 abstract class DescriptorHeader() {
   private val headerSize = 23
 
-  private val descriptorId: String = UUID.randomUUID().toString.replace("-", "")
+  private[this] val _descriptorId: String = UUID.randomUUID().toString.replace("-", "")
   protected var payloadDescriptor: Int
   // unsigned
   var ttl: Int = _
@@ -18,6 +18,8 @@ abstract class DescriptorHeader() {
   // フィールドには存在するが，抽象メソッドにより子クラスで計算させる
   // var payloadLength: Int = _
   def payloadLength: Int
+
+  def descriptorId = _descriptorId
 
   def convertHeaderToByteArray(): Array[Byte] = {
     val array: Array[Byte] = new Array[Byte](headerSize)
