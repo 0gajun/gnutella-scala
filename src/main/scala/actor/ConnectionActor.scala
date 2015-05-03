@@ -54,8 +54,10 @@ class ConnectionActor extends Actor {
   private def run(): Unit = {
     readHeader match {
       case Some(header) =>
-        val payloadLength = DescriptorHeader.calcPayloadLength(header)
-        val payload = readPayload(payloadLength).get
+        var payload = Array[Byte]()
+        DescriptorHeader.calcPayloadLength(header) match {
+          case len if len > 0 => payload = readPayload(len).get
+        }
         DescriptorInterpreter.execute(header, payload)
     }
     self ! "run"
