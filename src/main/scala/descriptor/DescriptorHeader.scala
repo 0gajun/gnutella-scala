@@ -1,12 +1,12 @@
 package descriptor
 
-import java.nio.ByteBuffer
+import java.nio.{ByteOrder, ByteBuffer}
 import java.util.UUID
 
 import org.apache.commons.codec.binary.Hex
+import util.Logger
 
 abstract class DescriptorHeader() {
-  private val headerSize = 23
 
   private[this] val _descriptorId: String = UUID.randomUUID().toString.replace("-", "")
   protected var payloadDescriptor: Int
@@ -22,8 +22,8 @@ abstract class DescriptorHeader() {
   def descriptorId = _descriptorId
 
   def convertHeaderToByteArray(): Array[Byte] = {
-    val array: Array[Byte] = new Array[Byte](headerSize)
-    var offset = headerSize - 1
+    val array: Array[Byte] = new Array[Byte](DescriptorHeader.headerSize)
+    var offset = DescriptorHeader.headerSize - 1
 
     // リトルエンディアンで格納する
     ByteBuffer.allocate(4).putInt(payloadLength).array.foreach( b => {
@@ -47,6 +47,8 @@ abstract class DescriptorHeader() {
 }
 
 object DescriptorHeader {
+  val headerSize = 23
+  val payloadDescriptorOffset = 16
   //Payload Descriptors
   val P_DESC_PING = 0x00
   val P_DESC_PONG = 0x01
@@ -59,4 +61,13 @@ object DescriptorHeader {
   val P_DESC_QRP = 0x30
   val P_DESC_OPEN_VECTOR_EXTENSION = 0x31
   val P_DESC_STANDARD_VENDOR_EXTENSION = 0x32
+
+  def calcPayloadLength(headerByte: Array[Byte]): Int = {
+    if (headerByte.size != headerSize) {
+      Logger.info("header size is incorrect")
+      return -1
+    }
+    ByteBuffer.allocate(4).put(headerByte, 19, 4).order(ByteOrder.LITTLE_ENDIAN).getInt
+  }
+
 }
