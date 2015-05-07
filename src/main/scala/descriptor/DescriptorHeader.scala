@@ -8,7 +8,12 @@ import util.Logger
 
 abstract class DescriptorHeader() {
 
-  private[this] val _descriptorId: String = UUID.randomUUID().toString.replace("-", "")
+  //-----------------------------------------------------------------
+  // Descriptor Id |Payload Descriptor|TTL   |Hops  |Payload Length |
+  // 16Byte        | 1Byte            |1Byte |1Byte | 4Byte         |
+  //-----------------------------------------------------------------
+
+  private[this] var _descriptorId: String = UUID.randomUUID().toString.replace("-", "")
   protected var payloadDescriptor: Int
   // unsigned
   var ttl: Int = _
@@ -20,6 +25,7 @@ abstract class DescriptorHeader() {
   def payloadLength: Int
 
   def descriptorId = _descriptorId
+  def descriptorId(id: String) = { _descriptorId = id }
 
   def convertHeaderToByteArray(): Array[Byte] = {
     val array: Array[Byte] = new Array[Byte](DescriptorHeader.headerSize)

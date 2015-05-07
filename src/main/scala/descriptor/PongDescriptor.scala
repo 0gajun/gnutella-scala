@@ -11,7 +11,7 @@ class PongDescriptor extends DescriptorHeader {
   //| 2byte| 4byte | 4byte     | 4byte      | xxx byte|
   //---------------------------------------------------
   //14(=2+4+4+4) + xxx
-  override def payloadLength: Int = 14 + optionalPongData.size
+  override def payloadLength: Int = 14 + optionalPongData.length
 
   var port: Short = _
   var ipAddress: InetAddress = _

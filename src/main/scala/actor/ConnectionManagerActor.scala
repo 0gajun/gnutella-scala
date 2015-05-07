@@ -29,7 +29,7 @@ class ConnectionManagerActor extends Actor {
    * @return
    */
   override def receive: Receive = {
-    case RunConnectionActor(s) => runActor(_)
+    case RunConnectionActor(s) => runActor(s)
     case BroadcastMessage(c, m) => broadcastMessage(c, m)
     case ForwardMessage(m) => forwardMessage(m)
   }

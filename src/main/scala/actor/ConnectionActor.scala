@@ -6,6 +6,7 @@ import java.net.Socket
 import akka.actor.{ActorRef, Actor}
 import descriptor._
 import interpreter.DescriptorInterpreter
+import util.Logger
 
 import scala.util.Try
 
@@ -23,9 +24,9 @@ class ConnectionActor extends Actor {
   private[this] val manager: ActorRef = context.parent
 
   override def receive: Receive = {
-    case CreateConnectionActor(s) => onCreate(_)
+    case CreateConnectionActor(s) => onCreate(s)
     case "run" => run()
-    case SendMessage => sendMessage(_)
+    case SendMessage(s) => sendMessage(s)
   }
 
   /**
@@ -56,6 +57,7 @@ class ConnectionActor extends Actor {
   private def run(): Unit = {
     readHeader match {
       case Some(header) => onReceiveMessage(header)
+      case None =>
     }
     self ! "run"
   }
@@ -68,14 +70,16 @@ class ConnectionActor extends Actor {
     val len = DescriptorHeader.calcPayloadLength(header)
     val payload = if (len > 0) readPayload(len).get else Array[Byte]()
 
-    DescriptorInterpreter.execute(header, payload) match {
+    DescriptorInterpreter.execute(header, payload, self) match {
+      // メッセージのフォワーディングを行う.
+      // 応答等は，引数として渡されたselfのメールボックスにメッセージを入れる形で処理する
       case Some(s) => s match {
         case ping: PingDescriptor => manager ! BroadcastMessage(this, ping)
         case pong: PongDescriptor => manager ! ForwardMessage(pong)
         case query: QueryDescriptor => manager ! BroadcastMessage(this, query)
         case hits: QueryHitsDescriptor => manager ! ForwardMessage(hits)
       }
-      case None =>
+      case None => Logger.error("unknown descriptor type @onReceiveMessage")
     }
   }
 
