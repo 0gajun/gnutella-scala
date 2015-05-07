@@ -3,8 +3,8 @@ package actor
 import java.io.{BufferedInputStream, BufferedOutputStream}
 import java.net.Socket
 
-import akka.actor.Actor
-import descriptor.DescriptorHeader
+import akka.actor.{ActorRef, Actor}
+import descriptor._
 import interpreter.DescriptorInterpreter
 
 import scala.util.Try
@@ -20,6 +20,7 @@ class ConnectionActor extends Actor {
   private[this] var input: BufferedInputStream = _
   private[this] var output: BufferedOutputStream = _
 
+  private[this] val manager: ActorRef = context.parent
 
   override def receive: Receive = {
     case CreateConnectionActor(s) => onCreate(_)
@@ -50,17 +51,32 @@ class ConnectionActor extends Actor {
 
   /**
    * コネクションからメッセージの待受を行う
+   * メッセージ処理orタイムアウト後，自身に"run"メッセージを送る
    */
   private def run(): Unit = {
     readHeader match {
-      case Some(header) =>
-        var payload = Array[Byte]()
-        DescriptorHeader.calcPayloadLength(header) match {
-          case len if len > 0 => payload = readPayload(len).get
-        }
-        DescriptorInterpreter.execute(header, payload)
+      case Some(header) => onReceiveMessage(header)
     }
     self ! "run"
+  }
+
+  /**
+   * メッセージを受信した時の処理を行う
+   * @param header
+   */
+  private def onReceiveMessage(header: Array[Byte]): Unit = {
+    val len = DescriptorHeader.calcPayloadLength(header)
+    val payload = if (len > 0) readPayload(len).get else Array[Byte]()
+
+    DescriptorInterpreter.execute(header, payload) match {
+      case Some(s) => s match {
+        case ping: PingDescriptor => manager ! BroadcastMessage(this, ping)
+        case pong: PongDescriptor => manager ! ForwardMessage(pong)
+        case query: QueryDescriptor => manager ! BroadcastMessage(this, query)
+        case hits: QueryHitsDescriptor => manager ! ForwardMessage(hits)
+      }
+      case None =>
+    }
   }
 
   /**

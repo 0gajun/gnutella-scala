@@ -9,4 +9,8 @@ object Logger {
     println("Logger: " + msg)
   }
 
+  def error(msg: String): Unit = {
+    println("[[[Error]]]: " + msg)
+  }
+
 }
