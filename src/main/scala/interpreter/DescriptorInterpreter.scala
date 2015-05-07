@@ -1,7 +1,7 @@
 package interpreter
 
 
-import akka.actor.ActorRef
+import akka.actor.{ActorContext, ActorRef}
 import descriptor.DescriptorHeader
 import util.Logger
 
@@ -10,9 +10,9 @@ import util.Logger
  * Created by Junya on 15/05/03.
  */
 object DescriptorInterpreter {
-  def execute(header: Array[Byte], payload: Array[Byte], caller: ActorRef): Unit = {
+  def execute(header: Array[Byte], payload: Array[Byte], callerContext: ActorContext): Option[DescriptorHeader] = {
     header(DescriptorHeader.payloadDescriptorOffset.toInt) match {
-      case DescriptorHeader.P_DESC_PING => PingInterpreter.execute(header, payload, caller)
+      case DescriptorHeader.P_DESC_PING => PingInterpreter.execute(header, payload, callerContext)
       case DescriptorHeader.P_DESC_PONG => Logger.info("not implemented"); None
       case DescriptorHeader.P_DESC_QUERY => Logger.info("not implemented"); None
       case DescriptorHeader.P_DESC_QUERY_HITS => Logger.info("not implemented"); None

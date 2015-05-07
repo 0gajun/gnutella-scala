@@ -70,9 +70,9 @@ class ConnectionActor extends Actor {
     val len = DescriptorHeader.calcPayloadLength(header)
     val payload = if (len > 0) readPayload(len).get else Array[Byte]()
 
-    DescriptorInterpreter.execute(header, payload, self) match {
-      // メッセージのフォワーディングを行う.
-      // 応答等は，引数として渡されたselfのメールボックスにメッセージを入れる形で処理する
+    // メッセージのフォワーディングを行う.
+    // 応答等は，引数として渡されたselfのメールボックスにメッセージを入れる形で処理する
+    DescriptorInterpreter.execute(header, payload, context) match {
       case Some(s) => s match {
         case ping: PingDescriptor => manager ! BroadcastMessage(this, ping)
         case pong: PongDescriptor => manager ! ForwardMessage(pong)
