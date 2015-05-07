@@ -32,6 +32,7 @@ class ConnectionManagerActor extends Actor {
     case RunConnectionActor(s) => runActor(s)
     case BroadcastMessage(c, m) => broadcastMessage(c, m)
     case ForwardMessage(m) => forwardMessage(m)
+    case SendMessageToAllConnections(m) => sendMessageToAllConnections(m)
   }
 
   /**
@@ -39,9 +40,9 @@ class ConnectionManagerActor extends Actor {
    * @param socket
    */
   private def runActor(socket: Socket): Unit = {
-    val actor = context.actorOf(Props[ConnectionActor], socket.getInetAddress.toString + socket.getPort)
-    context watch actor
-    actor ! RunConnectionActor(socket)
+    val actor = context.actorOf(Props[ConnectionActor],
+      "connection" + socket.getInetAddress.getHostAddress + socket.getPort)
+    actor ! CreateConnectionActor(socket)
     actor ! "run"
   }
 
@@ -63,6 +64,14 @@ class ConnectionManagerActor extends Actor {
     // ブロードキャスト
     context.children.filter(_.path.name != caller.self.path.name)
       .foreach(_ ! SendMessage(message))
+  }
+
+  /**
+   * ConnectionManagerの保持する全コネクションに対してメッセージを送信する
+   * @param message 送信したいメッセージ
+   */
+  private def sendMessageToAllConnections(message: DescriptorHeader): Unit = {
+    context.children.foreach(_ ! SendMessage(message))
   }
 
   /**
@@ -98,3 +107,4 @@ object ConnectionManagerActor {
 case class RunConnectionActor(socket: Socket)
 case class BroadcastMessage(caller: ConnectionActor, message: DescriptorHeader)
 case class ForwardMessage(message: DescriptorHeader)
+case class SendMessageToAllConnections(message: DescriptorHeader)

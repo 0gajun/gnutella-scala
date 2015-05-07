@@ -18,4 +18,10 @@ object Logger {
     println("===Debug===: " + msg)
   }
 
+  def fatal(msg: String): Unit = {
+    println("!!!!fatal!!!!")
+    println(msg)
+    sys.exit(1)
+  }
+
 }

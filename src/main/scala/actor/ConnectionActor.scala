@@ -46,6 +46,8 @@ class ConnectionActor extends Actor {
    */
   private def sendMessage(message: DescriptorHeader) = {
     val byteArray = message.toByteArray()
+    if (output == null)
+      Logger.fatal("Connection actor isn't set up.")
     output.write(byteArray)
     output.flush()
   }
@@ -67,6 +69,7 @@ class ConnectionActor extends Actor {
    * @param header
    */
   private def onReceiveMessage(header: Array[Byte]): Unit = {
+    Logger.info("message receive")
     val len = DescriptorHeader.calcPayloadLength(header)
     val payload = if (len > 0) readPayload(len).get else Array[Byte]()
 

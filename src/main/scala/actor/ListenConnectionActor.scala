@@ -2,7 +2,9 @@ package actor
 
 import java.net.ServerSocket
 
-import akka.actor.Actor
+import actor.ListenConnectionActor.ListenConnection
+import akka.actor.{ActorSystem, Actor}
+import util.Logger
 
 /**
  * 外部からincomingConnectionを受け付けるActor
@@ -17,9 +19,11 @@ class ListenConnectionActor extends Actor {
   }
 
   private def listen(): Unit = {
+    Logger.debug("ListenConnectionActor start listen")
     val socket = serverSocket.accept()
-    val manager = context.actorSelection("user/" + ConnectionManagerActor.name)
+    val manager = context.system.actorSelection("user/" + ConnectionManagerActor.name)
     manager ! RunConnectionActor(socket)
+    Logger.info("incoming connection accepted!")
     self ! ListenConnection
   }
 
@@ -28,6 +32,10 @@ class ListenConnectionActor extends Actor {
     super.preStart()
   }
 
+}
+
+object ListenConnectionActor {
+  val name = "listenConnection"
   case class ListenConnection()
 }
 

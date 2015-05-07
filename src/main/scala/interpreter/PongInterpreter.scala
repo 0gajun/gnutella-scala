@@ -46,7 +46,7 @@ object PongInterpreter extends HeaderInterpreter {
   private def registerServent(pong: PongDescriptor, callerContext: ActorContext): Unit = {
     val servent = new ServentInfo(pong.port, pong.ipAddress, pong.numberOfFilesShared,
       pong.numberOfKilobytesShared, pong.hops)
-    val selection = callerContext.actorSelection("user/" + ServentsManagerActor.name)
+    val selection = callerContext.system.actorSelection("user/" + ServentsManagerActor.name)
 
     Logger.debug(selection.toString() + "@registerServent")
     selection ! RegisterServent(servent)
@@ -62,12 +62,12 @@ object PongInterpreter extends HeaderInterpreter {
     val pong = new PongDescriptor
     parseHeader(header, pong)
     pong.port = ByteBuffer.allocate(2)
-      .put(payload.slice(0, 1)).order(ByteOrder.LITTLE_ENDIAN).getShort
-    pong.ipAddress = InetAddress.getByAddress(payload.slice(2, 5))
+      .put(payload.slice(0, 2)).order(ByteOrder.LITTLE_ENDIAN).getShort(0)
+    pong.ipAddress = InetAddress.getByAddress(payload.slice(2, 6))
     pong.numberOfFilesShared = ByteBuffer.allocate(4)
-      .put(payload.slice(6, 9)).order(ByteOrder.LITTLE_ENDIAN).getInt
+      .put(payload.slice(6, 10)).order(ByteOrder.LITTLE_ENDIAN).getInt(0)
     pong.numberOfKilobytesShared = ByteBuffer.allocate(4)
-      .put(payload.slice(10, 13)).order(ByteOrder.LITTLE_ENDIAN).getInt
+      .put(payload.slice(10, 14)).order(ByteOrder.LITTLE_ENDIAN).getInt(0)
     //Optionalは使わないので空
     pong.optionalPongData = Array()
     pong

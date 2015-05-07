@@ -69,11 +69,11 @@ object DescriptorHeader {
   val P_DESC_STANDARD_VENDOR_EXTENSION = 0x32
 
   def calcPayloadLength(headerByte: Array[Byte]): Int = {
-    if (headerByte.size != headerSize) {
+    if (headerByte.length != headerSize) {
       Logger.info("header size is incorrect")
       return -1
     }
-    ByteBuffer.allocate(4).put(headerByte, 19, 4).order(ByteOrder.LITTLE_ENDIAN).getInt
+    ByteBuffer.allocate(4).put(headerByte, 19, 4).order(ByteOrder.LITTLE_ENDIAN).getInt(0)
   }
 
 }

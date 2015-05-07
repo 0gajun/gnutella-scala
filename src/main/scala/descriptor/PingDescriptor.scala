@@ -7,7 +7,7 @@ class PingDescriptor extends DescriptorHeader{
 
   override def toByteArray(): Array[Byte] = {
     val header = convertHeaderToByteArray()
-    header++optionalPingData.reverse
+    Array.concat(header, optionalPingData.reverse)
   }
 
   override def payloadLength:Int= optionalPingData.size
