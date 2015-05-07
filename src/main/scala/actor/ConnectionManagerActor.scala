@@ -91,6 +91,10 @@ class ConnectionManagerActor extends Actor {
   }
 }
 
+object ConnectionManagerActor {
+  val name = "connectionManager"
+}
+
 case class RunConnectionActor(socket: Socket)
 case class BroadcastMessage(caller: ConnectionActor, message: DescriptorHeader)
 case class ForwardMessage(message: DescriptorHeader)
