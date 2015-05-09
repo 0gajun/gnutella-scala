@@ -34,6 +34,7 @@ class ConnectionActor extends Actor {
    * @param s
    */
   private def onCreate(s: Socket): Unit = {
+    Logger.debug("ConnectionActor created!")
     socket = s
     socket.setSoTimeout(timeoutInterval)
     input = new BufferedInputStream(s.getInputStream)
@@ -45,7 +46,9 @@ class ConnectionActor extends Actor {
    * @param message
    */
   private def sendMessage(message: DescriptorHeader) = {
+    Logger.debug("send message")
     val byteArray = message.toByteArray()
+    Logger.debug("byteArray->" + byteArray.length)
     if (output == null)
       Logger.fatal("Connection actor isn't set up.")
     output.write(byteArray)
@@ -60,7 +63,7 @@ class ConnectionActor extends Actor {
     checkConnectionStatus()
 
     readHeader match {
-      case Some(header) => onReceiveMessage(header)
+      case Some(header) => Logger.debug("message receive");onReceiveMessage(header)
       case None =>
     }
     self ! "run"
@@ -90,10 +93,10 @@ class ConnectionActor extends Actor {
     // 応答等は，引数として渡されたselfのメールボックスにメッセージを入れる形で処理する
     DescriptorInterpreter.execute(header, payload, context) match {
       case Some(s) => s match {
-        case ping: PingDescriptor => manager ! BroadcastMessage(this, ping)
-        case pong: PongDescriptor => manager ! ForwardMessage(pong)
-        case query: QueryDescriptor => manager ! BroadcastMessage(this, query)
-        case hits: QueryHitsDescriptor => manager ! ForwardMessage(hits)
+        case ping: PingDescriptor => Logger.info("receive ping"); manager ! BroadcastMessage(this, ping)
+        case pong: PongDescriptor => Logger.info("receive pong"); manager ! ForwardMessage(pong)
+        case query: QueryDescriptor => Logger.info("receive query"); manager ! BroadcastMessage(this, query)
+        case hits: QueryHitsDescriptor => Logger.info("receive queryHits"); manager ! ForwardMessage(hits)
       }
       case None => Logger.error("unknown descriptor type @onReceiveMessage")
     }

@@ -5,6 +5,7 @@ import java.net.InetAddress
 import actor.SendMessage
 import akka.actor.{ActorContext, ActorRef}
 import descriptor.{PingDescriptor, PongDescriptor}
+import util.Logger
 
 /**
  * PingDescriptorのバイト列を解釈して処理を行うオブジェクト
@@ -21,6 +22,7 @@ object PingInterpreter extends HeaderInterpreter {
    */
   def execute(header: Array[Byte], payload: Array[Byte], callerContext: ActorContext): Option[PingDescriptor] = {
     val ping = parse(header, payload)
+    Logger.info("ping: " + ping.descriptorId)
     pongReply(ping, callerContext.self)
     Option(ping)
   }

@@ -44,6 +44,7 @@ class ConnectionManagerActor extends Actor {
       "connection" + socket.getInetAddress.getHostAddress + socket.getPort)
     actor ! CreateConnectionActor(socket)
     actor ! "run"
+    Logger.debug("connection created")
   }
 
   /**
@@ -52,6 +53,7 @@ class ConnectionManagerActor extends Actor {
    * @param message
    */
   private def broadcastMessage(caller: ConnectionActor, message: DescriptorHeader): Unit = {
+    Logger.debug("broadcastMessage")
     // Forward済みのDescriptorはBroadcastしない
     if (routingTable.contains(message.descriptorId)) {
       Logger.info("Message is already forwarded. Discarded.")
@@ -80,6 +82,7 @@ class ConnectionManagerActor extends Actor {
    * @param message
    */
   private def forwardMessage(message: DescriptorHeader): Unit = {
+    Logger.debug("forwardMessage")
     routingTable.get(message.descriptorId) match {
       case Some(s) =>
         val actor = context.actorSelection(s)
