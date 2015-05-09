@@ -57,11 +57,24 @@ class ConnectionActor extends Actor {
    * メッセージ処理orタイムアウト後，自身に"run"メッセージを送る
    */
   private def run(): Unit = {
+    checkConnectionStatus()
+
     readHeader match {
       case Some(header) => onReceiveMessage(header)
       case None =>
     }
     self ! "run"
+  }
+
+  /**
+   * コネクションがクローズされているかチェックを行い，クローズされている場合はActorをstopする
+   */
+  private def checkConnectionStatus(): Unit = {
+    if (socket.isClosed) {
+      input.close()
+      output.close()
+      context.stop(self)
+    }
   }
 
   /**
