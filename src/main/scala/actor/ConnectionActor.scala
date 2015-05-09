@@ -98,7 +98,7 @@ class ConnectionActor extends Actor {
         case query: QueryDescriptor => Logger.info("receive query"); manager ! BroadcastMessage(this, query)
         case hits: QueryHitsDescriptor => Logger.info("receive queryHits"); manager ! ForwardMessage(hits)
       }
-      case None => Logger.error("unknown descriptor type @onReceiveMessage")
+      case None => Logger.info("no forwarding message")
     }
   }
 

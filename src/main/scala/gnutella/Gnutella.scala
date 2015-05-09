@@ -38,6 +38,10 @@ object Gnutella {
     setUpFirstConnection(connectionManager)
     gnutellaStatus = GnutellaStatus.waitingPong
     sendPing(connectionManager)
+
+    // Pingレスポンスの待機時間
+    Thread.sleep(3000)
+    gnutellaStatus = GnutellaStatus.running
     Logger.info("setup finished")
   }
 

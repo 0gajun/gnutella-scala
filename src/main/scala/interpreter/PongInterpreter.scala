@@ -27,6 +27,7 @@ object PongInterpreter extends HeaderInterpreter {
    */
   def execute(header: Array[Byte], payload: Array[Byte], callerContext: ActorContext): Option[PongDescriptor] = {
     val pong = parse(header, payload)
+    Logger.info("pong: " + pong.descriptorId)
     // 対応するPingを受け取っているか否かは，ConnectionManagerのルーティングテーブルにて解決
 
     // Pingに対するPong応答を待っていれば，フォワードせずに登録する
