@@ -73,9 +73,11 @@ class ConnectionActor extends Actor {
    * コネクションがクローズされているかチェックを行い，クローズされている場合はActorをstopする
    */
   private def checkConnectionStatus(): Unit = {
-    if (socket.isClosed) {
+    if (socket != null && socket.isClosed) {
       input.close()
       output.close()
+      context.stop(self)
+    } else if (socket == null) {
       context.stop(self)
     }
   }
