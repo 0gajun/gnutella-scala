@@ -2,11 +2,11 @@ package actor
 
 import java.io.File
 
+import actor.SharedFileManagerActor.{Initialize, FileSearch}
 import akka.actor.Actor
-import akka.actor.Actor.Receive
 import util.Logger
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 
 /**
  * Gnutellaクライアントにおける共有ファイルを管理するアクター
@@ -14,20 +14,28 @@ import scala.collection.mutable.HashMap
  */
 class SharedFileManagerActor extends Actor {
 
+  // Tuple3(FileName, FileSize, FilePath)
+  type FileInfo = (String, Long, String)
+
   private val DEFAULT_SHARED_FOLDER_PATH = "./shared/"
 
-  // FileName->(FileSize, FilePath)
-  private[this] val fileEntries = new HashMap[String, (Long, String)]()
+  private[this] val fileEntries = new mutable.ListBuffer[FileInfo]()
 
   override def receive: Receive = {
-    case SharedFileManagerActor.Initialize => initialize()
+    case Initialize => initialize()
+    case FileSearch(f, b) => searchFile(f, b)
   }
 
+  /**
+   * 初期化を行なう
+   */
   private def initialize(): Unit = {
     updateFileEntry()
   }
 
-
+  /**
+   * ファイルエントリ一覧を更新する
+   */
   private def updateFileEntry(): Unit = {
     val rootFolder = new File(DEFAULT_SHARED_FOLDER_PATH)
     if (!rootFolder.exists()) {
@@ -39,21 +47,61 @@ class SharedFileManagerActor extends Actor {
     }
 
     fileEntries.clear()
-    searchDir(rootFolder)
+    recurDir(rootFolder)
   }
 
-  private def searchDir(dir: File): Unit = {
-    Logger.debug("directory name: " + dir.getName + " @searchDir")
+  /**
+   * ディレクトリを再帰的に探索する
+   * @param dir ディレクトリのファイルオブジェクト
+   */
+  private def recurDir(dir: File): Unit = {
     dir.listFiles().foreach {
       case f if f.isFile => registerFileToFileEntry(f)
-      case d if d.isDirectory => searchDir(d)
+      case d if d.isDirectory => recurDir(d)
       case other => Logger.error("unknown type: path-> " + other.getAbsolutePath)
     }
   }
 
+  /**
+   * ファイルエントリを登録する
+   * @param file 登録するファイルオブジェクト
+   */
   private def registerFileToFileEntry(file: File): Unit = {
-    fileEntries+=(file.getName->(file.length(), file.getAbsolutePath))
+    fileEntries += ((file.getName, file.length(), file.getAbsolutePath))
     Logger.debug("file(" + file.getName + ") is registered")
+  }
+
+
+  /**
+   * ファイルの検索を行なう
+   * @param fileName 検索対象のファイル名
+   * @param isLikeSearch 部分一致を行なうか否か．行なう場合はtrue
+   * @return 検索結果のリスト
+   */
+  private def searchFile(fileName: String, isLikeSearch: Boolean): List[FileInfo] = {
+    isLikeSearch match {
+      case false => exactSearchFile(fileName)
+      case true => likeSearchFile(fileName)
+    }
+  }
+
+  /**
+   * ファイル名との完全一致検索を行う
+   * @param fileName 検索を行いたいファイル名
+   * @return 検索結果のリスト
+   */
+  private def exactSearchFile(fileName: String): List[FileInfo] = {
+    fileEntries filter (_._1 == fileName) toList
+  }
+
+  /**
+   * ファイル名の部分一致検索を行う
+   * @param query 部分一致を行うクエリー
+   * @return 検索結果のリスト
+   */
+  private def likeSearchFile(query: String): List[FileInfo] = {
+    val reg = ".*" + query + ".*"
+    fileEntries filter (_._1.matches(reg)) toList
   }
 
 }
@@ -62,4 +110,7 @@ object SharedFileManagerActor {
   val name = "sharedFileManager"
 
   case class Initialize()
+
+  case class FileSearch(fileName: String, isLikeSearch: Boolean)
+
 }
