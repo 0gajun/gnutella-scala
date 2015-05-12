@@ -56,6 +56,9 @@ object Gnutella {
     val listen = system.actorOf(Props[ListenConnectionActor], ListenConnectionActor.name)
     listen ! ListenConnectionActor.ListenConnection
 
+    val fileManager = system.actorOf(Props[SharedFileManagerActor], SharedFileManagerActor.name)
+    fileManager ! SharedFileManagerActor.Initialize
+
     manager
   }
 
