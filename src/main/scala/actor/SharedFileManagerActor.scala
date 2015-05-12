@@ -2,7 +2,7 @@ package actor
 
 import java.io.File
 
-import actor.SharedFileManagerActor.{Initialize, FileSearch}
+import actor.SharedFileManagerActor.{RegisterNewFile, Initialize, FileSearch}
 import akka.actor.Actor
 import util.Logger
 
@@ -18,12 +18,14 @@ class SharedFileManagerActor extends Actor {
   type FileInfo = (String, Long, String)
 
   private val DEFAULT_SHARED_FOLDER_PATH = "./shared/"
+  private val rootFolder = new File(DEFAULT_SHARED_FOLDER_PATH)
 
   private[this] val fileEntries = new mutable.ListBuffer[FileInfo]()
 
   override def receive: Receive = {
     case Initialize => initialize()
     case FileSearch(f, b) => searchFile(f, b)
+    case RegisterNewFile(f) => registrationRequestHandler(f)
   }
 
   /**
@@ -37,7 +39,6 @@ class SharedFileManagerActor extends Actor {
    * ファイルエントリ一覧を更新する
    */
   private def updateFileEntry(): Unit = {
-    val rootFolder = new File(DEFAULT_SHARED_FOLDER_PATH)
     if (!rootFolder.exists()) {
       // TODO: 共有フォルダが存在しない場合の処理
     }
@@ -71,6 +72,14 @@ class SharedFileManagerActor extends Actor {
     Logger.debug("file(" + file.getName + ") is registered")
   }
 
+  /**
+   * ファイルの登録リクエストを処理する. (バリデーションチェック
+   */
+  private def registrationRequestHandler(file: File): Unit = {
+    if (file.isFile && file.getAbsolutePath.contains(rootFolder.getAbsolutePath)) {
+      registerFileToFileEntry(file)
+    }
+  }
 
   /**
    * ファイルの検索を行なう
@@ -110,7 +119,7 @@ object SharedFileManagerActor {
   val name = "sharedFileManager"
 
   case class Initialize()
-
+  case class RegisterNewFile(file: File)
   case class FileSearch(fileName: String, isLikeSearch: Boolean)
 
 }
