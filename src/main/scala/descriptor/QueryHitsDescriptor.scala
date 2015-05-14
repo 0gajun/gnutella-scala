@@ -1,7 +1,9 @@
 package descriptor
 
-import java.net.Inet4Address
+import java.net.{InetAddress, Inet4Address}
 import java.nio.ByteBuffer
+
+import descriptor.QueryHitsDescriptor.ResultSet
 
 import scala.collection.mutable
 
@@ -17,7 +19,7 @@ class QueryHitsDescriptor extends DescriptorHeader {
 
   var numberOfHits: Byte = _
   var port: Short = _
-  var ipAddress: Inet4Address = _
+  var ipAddress: InetAddress = _
 
   @Deprecated
   var speed: Short = -1
@@ -35,16 +37,6 @@ class QueryHitsDescriptor extends DescriptorHeader {
     resultSet = builder.result()
   }
 
-  class ResultSet(fileIndex: Int, fileSize: Int, sharedFileName: String, optionalResultData: String) {
-    private val indexByte = ByteBuffer.allocate(4).putInt(fileIndex).array.reverse
-    private val sizeByte = ByteBuffer.allocate(4).putInt(fileSize).array.reverse
-    private val nameByte = sharedFileName.getBytes.reverse
-    private val optionByte = optionalResultData.getBytes.reverse
-    private val nullByte = Array(0.toByte)
-    val byteArray = Array.concat(indexByte, sizeByte, nameByte, nullByte, optionByte, nullByte)
-
-    def getByteSize = byteArray.size
-  }
   override def toByteArray(): Array[Byte] = {
     val header = convertHeaderToByteArray()
     val portByte = ByteBuffer.allocate(2).putShort(port).array.reverse
@@ -68,5 +60,18 @@ class QueryHitsDescriptor extends DescriptorHeader {
       val legacy: Int = speed&0x01111111// Legacy format
       ByteBuffer.allocate(2).putInt(legacy).array.reverse
     }
+  }
+}
+
+object QueryHitsDescriptor {
+  class ResultSet(fileIndex: Int, fileSize: Int, sharedFileName: String, optionalResultData: String) {
+    private val indexByte = ByteBuffer.allocate(4).putInt(fileIndex).array.reverse
+    private val sizeByte = ByteBuffer.allocate(4).putInt(fileSize).array.reverse
+    private val nameByte = sharedFileName.getBytes.reverse
+    private val optionByte = optionalResultData.getBytes.reverse
+    private val nullByte = Array(0.toByte)
+    val byteArray = Array.concat(indexByte, sizeByte, nameByte, nullByte, optionByte, nullByte)
+
+    def getByteSize = byteArray.size
   }
 }
