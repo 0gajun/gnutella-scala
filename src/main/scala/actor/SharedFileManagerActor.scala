@@ -2,7 +2,7 @@ package actor
 
 import java.io.File
 
-import actor.SharedFileManagerActor.{RegisterNewFile, Initialize, FileSearch}
+import actor.SharedFileManagerActor.{FileInfo, FileSearch, Initialize, RegisterNewFile}
 import akka.actor.Actor
 import util.Logger
 
@@ -14,8 +14,6 @@ import scala.collection.mutable
  */
 class SharedFileManagerActor extends Actor {
 
-  // Tuple3(FileName, FileSize, FilePath)
-  type FileInfo = (String, Long, String)
 
   private val DEFAULT_SHARED_FOLDER_PATH = "./shared/"
   private val rootFolder = new File(DEFAULT_SHARED_FOLDER_PATH)
@@ -24,7 +22,7 @@ class SharedFileManagerActor extends Actor {
 
   override def receive: Receive = {
     case Initialize => initialize()
-    case FileSearch(f, b) => searchFile(f, b)
+    case FileSearch(f, b) => sender ! search(f, b)
     case RegisterNewFile(f) => registrationRequestHandler(f)
   }
 
@@ -82,6 +80,17 @@ class SharedFileManagerActor extends Actor {
   }
 
   /**
+   * スペース区切りの複数条件ファイル検索を行なう
+   * ##現状，先頭の条件のみ##，
+   * @param query
+   * @return
+   */
+  private def search(query: String, isLikeSearch: Boolean): List[FileInfo] = {
+    val fileNames = query.split(' ')
+    searchFile(fileNames(0), true)
+  }
+
+  /**
    * ファイルの検索を行なう
    * @param fileName 検索対象のファイル名
    * @param isLikeSearch 部分一致を行なうか否か．行なう場合はtrue
@@ -116,6 +125,9 @@ class SharedFileManagerActor extends Actor {
 }
 
 object SharedFileManagerActor {
+  // Tuple3(FileName, FileSize, FilePath)
+  type FileInfo = (String, Long, String)
+
   val name = "sharedFileManager"
 
   case class Initialize()
