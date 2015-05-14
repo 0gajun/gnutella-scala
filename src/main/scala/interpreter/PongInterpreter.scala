@@ -9,7 +9,7 @@ import akka.actor.ActorContext
 import descriptor.PongDescriptor
 import gnutella.Gnutella
 import model.ServentInfo
-import util.Logger
+import util.{ActorUtil, Logger}
 
 
 /**
@@ -47,7 +47,7 @@ object PongInterpreter extends HeaderInterpreter {
   private def registerServent(pong: PongDescriptor, callerContext: ActorContext): Unit = {
     val servent = new ServentInfo(pong.port, pong.ipAddress, pong.numberOfFilesShared,
       pong.numberOfKilobytesShared, pong.hops)
-    val selection = callerContext.system.actorSelection("user/" + ServentsManagerActor.name)
+    val selection = ActorUtil.getActor(callerContext.system, ServentsManagerActor.name)
 
     Logger.debug(selection.toString() + "@registerServent")
     selection ! RegisterServent(servent)
