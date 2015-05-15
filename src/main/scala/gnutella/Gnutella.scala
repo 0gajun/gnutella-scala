@@ -1,6 +1,7 @@
 package gnutella
 
 import java.net.{Socket, InetAddress}
+import java.util.UUID
 
 import actor._
 import akka.actor.{ActorRef, Props, ActorSystem}
@@ -15,10 +16,15 @@ import scala.util.Try
  */
 object Gnutella {
   private[this] var gnutellaStatus: Int = GnutellaStatus.initializing
+  private[this] val serventIdentifier: String = UUID.randomUUID().toString.replace("-", "")
+
+  def getServentIdentifier = serventIdentifier
 
   def getStatus = gnutellaStatus
 
   def isWaitingPong = { gnutellaStatus == GnutellaStatus.waitingPong }
+
+
 
   def main(args: Array[String]): Unit = {
     println("Welcome to gnutella!!!")

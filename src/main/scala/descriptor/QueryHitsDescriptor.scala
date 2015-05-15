@@ -64,6 +64,11 @@ class QueryHitsDescriptor extends DescriptorHeader {
 }
 
 object QueryHitsDescriptor {
+
+  //----------------------------------------------------------------------------------
+  //| File Index | File Size | Shared File Name | Null  | Optional Result Data | Null |
+  //| 4byte      | 4byte     | xxxbyte          | 1byte | yyybyte              | 1byte|
+  //----------------------------------------------------------------------------------
   class ResultSet(fileIndex: Int, fileSize: Int, sharedFileName: String, optionalResultData: String) {
     private val indexByte = ByteBuffer.allocate(4).putInt(fileIndex).array.reverse
     private val sizeByte = ByteBuffer.allocate(4).putInt(fileSize).array.reverse
@@ -72,6 +77,6 @@ object QueryHitsDescriptor {
     private val nullByte = Array(0.toByte)
     val byteArray = Array.concat(indexByte, sizeByte, nameByte, nullByte, optionByte, nullByte)
 
-    def getByteSize = byteArray.size
+    def getByteSize = byteArray.length
   }
 }

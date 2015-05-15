@@ -66,7 +66,7 @@ class SharedFileManagerActor extends Actor {
    * @param file 登録するファイルオブジェクト
    */
   private def registerFileToFileEntry(file: File): Unit = {
-    fileEntries += ((file.getName, file.length(), file.getAbsolutePath))
+    fileEntries += ((file.getName, file.length(), file.getAbsolutePath, fileEntries.length))
     Logger.debug("file(" + file.getName + ") is registered")
   }
 
@@ -125,8 +125,8 @@ class SharedFileManagerActor extends Actor {
 }
 
 object SharedFileManagerActor {
-  // Tuple3(FileName, FileSize, FilePath)
-  type FileInfo = (String, Long, String)
+  // Tuple3(FileName, FileSize, FilePath, FileIndex)
+  type FileInfo = (String, Int, String, Int)
 
   val name = "sharedFileManager"
 

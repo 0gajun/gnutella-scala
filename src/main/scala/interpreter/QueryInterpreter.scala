@@ -4,13 +4,14 @@ import java.net.InetAddress
 import java.nio.{ByteOrder, ByteBuffer}
 import java.util.concurrent.TimeUnit
 
-import actor.SharedFileManagerActor
+import actor.{SendMessage, SharedFileManagerActor}
 import actor.SharedFileManagerActor.FileSearch
-import akka.actor.{ActorRef, ActorContext}
+import akka.actor.ActorContext
 import akka.pattern.ask
 import akka.util.Timeout
 import descriptor.{QueryHitsDescriptor, QueryDescriptor}
 import descriptor.QueryHitsDescriptor.ResultSet
+import gnutella.Gnutella
 import util.{ActorUtil, Logger}
 
 /**
@@ -48,13 +49,19 @@ object QueryInterpreter extends HeaderInterpreter {
     val f = fileManager ? FileSearch(query.searchCriteria, true)
 
     f.onSuccess( {
-      case res: List[SharedFileManagerActor.FileInfo] => sendQueryHits(query, res)
+      case res: List[SharedFileManagerActor.FileInfo] => sendQueryHits(query, res, caller)
       case _ =>
     })
   }
 
+  /**
+   * 検索結果に応じたQueryHitsを送信する
+   * @param query QueryDescriptor
+   * @param result 検索結果
+   */
   private def sendQueryHits(query: QueryDescriptor,
-                            result: List[SharedFileManagerActor.FileInfo]): Unit = {
+                            result: List[SharedFileManagerActor.FileInfo],
+                            caller: ActorContext): Unit = {
     val queryHits = new QueryHitsDescriptor
     // Header
     queryHits.descriptorId(query.descriptorId)
@@ -68,12 +75,18 @@ object QueryInterpreter extends HeaderInterpreter {
     queryHits.xmlMetaData = false
     queryHits.setResultSets(buildResultSets(result))
     queryHits.optionalQhdData = Array() // Optionなので無視
-    queryHits.serventIdentifier = "hogehoge" //TODO: serventIdentifier
+    queryHits.serventIdentifier = Gnutella.getServentIdentifier
+
+    caller.self ! SendMessage(queryHits)
   }
 
+  /**
+   * 検索結果より，ResultSetを作成する
+   * @param result
+   * @return
+   */
   private def buildResultSets(result: List[SharedFileManagerActor.FileInfo]): Array[ResultSet] = {
-    // 未実装
-    new Array[ResultSet](0)
+    result map(fi => new ResultSet(fi._4, fi._2, fi._3, "")) toArray
   }
 
   /**
