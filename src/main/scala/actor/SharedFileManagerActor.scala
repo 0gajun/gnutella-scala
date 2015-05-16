@@ -66,7 +66,7 @@ class SharedFileManagerActor extends Actor {
    * @param file 登録するファイルオブジェクト
    */
   private def registerFileToFileEntry(file: File): Unit = {
-    fileEntries += ((file.getName, file.length(), file.getAbsolutePath, fileEntries.length))
+    fileEntries += ((file.getName, file.length.toInt, file.getAbsolutePath, fileEntries.length))
     Logger.debug("file(" + file.getName + ") is registered")
   }
 

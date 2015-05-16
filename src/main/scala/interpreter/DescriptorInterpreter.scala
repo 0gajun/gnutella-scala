@@ -11,13 +11,13 @@ import util.Logger
  */
 object DescriptorInterpreter {
   def execute(header: Array[Byte], payload: Array[Byte], callerContext: ActorContext): Option[DescriptorHeader] = {
-    header(DescriptorHeader.payloadDescriptorOffset.toInt) match {
+    DescriptorHeader.calcPayloadDescriptor(header) match {
       case DescriptorHeader.P_DESC_PING => PingInterpreter.execute(header, payload, callerContext)
       case DescriptorHeader.P_DESC_PONG => PongInterpreter.execute(header, payload, callerContext)
-      case DescriptorHeader.P_DESC_QUERY => Logger.info("not implemented"); None
+      case DescriptorHeader.P_DESC_QUERY => QueryInterpreter.execute(header, payload, callerContext)
       case DescriptorHeader.P_DESC_QUERY_HITS => Logger.info("not implemented"); None
       case DescriptorHeader.P_DESC_PUSH => Logger.info("not implemented"); None
-      case _ => Logger.error("Unknown payloadDescriptor type. discard."); None
+      case value => Logger.error("Unknown payloadDescriptor type(" + value + "). discard."); None
     }
   }
 }

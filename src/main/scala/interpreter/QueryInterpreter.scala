@@ -39,7 +39,7 @@ object QueryInterpreter extends HeaderInterpreter {
    * Queryの内容から，ファイルを探索し，結果をQueryHitsとして送信する
    * @param query
    */
-  private def processQuery(query: QueryDescriptor, caller: ActorContext): Unit = {
+  private def processQuery(query: QueryDescriptor, caller: ActorContext) = {
     import scala.concurrent.ExecutionContext.Implicits.global
 
     val fileManager = ActorUtil.getActor(caller.system, SharedFileManagerActor.name)
@@ -50,7 +50,7 @@ object QueryInterpreter extends HeaderInterpreter {
 
     f.onSuccess( {
       case res: List[SharedFileManagerActor.FileInfo] => sendQueryHits(query, res, caller)
-      case _ =>
+      case _ => Logger.info("No search result. query is [" + query.searchCriteria  +"]")
     })
   }
 
@@ -102,7 +102,7 @@ object QueryInterpreter extends HeaderInterpreter {
     val head = header.slice(0,2)
     val tail = header.slice(2,header.length)
     query.minimumSpeed = ByteBuffer.allocate(2).put(head)
-      .order(ByteOrder.LITTLE_ENDIAN).getShort
+      .order(ByteOrder.LITTLE_ENDIAN).getShort(0)
 
     val criteriaByte = tail takeWhile(_ != 0.toByte)
     query.searchCriteria = new String(ByteBuffer.allocate(criteriaByte.length)

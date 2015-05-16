@@ -58,7 +58,7 @@ class QueryHitsDescriptor extends DescriptorHeader {
       ByteBuffer.allocate(4).putInt(extend).array.reverse
     } else {
       val legacy: Int = speed&0x01111111// Legacy format
-      ByteBuffer.allocate(2).putInt(legacy).array.reverse
+      ByteBuffer.allocate(4).putInt(legacy).array.reverse
     }
   }
 }
