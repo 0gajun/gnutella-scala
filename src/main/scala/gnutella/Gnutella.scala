@@ -5,7 +5,7 @@ import java.util.UUID
 
 import actor._
 import akka.actor.{ActorRef, Props, ActorSystem}
-import descriptor.PingDescriptor
+import descriptor.{QueryDescriptor, PingDescriptor}
 import util.Logger
 
 import scala.util.Try
@@ -17,6 +17,8 @@ import scala.util.Try
 object Gnutella {
   private[this] var gnutellaStatus: Int = GnutellaStatus.initializing
   private[this] val serventIdentifier: String = UUID.randomUUID().toString.replace("-", "")
+
+  private[this] var connectionManager: ActorRef = _
 
   def getServentIdentifier = serventIdentifier
 
@@ -30,6 +32,13 @@ object Gnutella {
     println("Welcome to gnutella!!!")
     setUp()
 
+    println("sendQuery?(y/n)")
+    if (scala.io.StdIn.readChar().equals('y')) {
+      val query = new QueryDescriptor
+      query.minimumSpeed = 0
+      query.searchCriteria = "test"
+      connectionManager ! SendMessageToAllConnections(query)
+    }
   }
 
 
@@ -65,6 +74,7 @@ object Gnutella {
     val fileManager = system.actorOf(Props[SharedFileManagerActor], SharedFileManagerActor.name)
     fileManager ! SharedFileManagerActor.Initialize
 
+    connectionManager = manager
     manager
   }
 

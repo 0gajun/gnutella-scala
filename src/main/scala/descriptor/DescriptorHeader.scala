@@ -81,13 +81,15 @@ object DescriptorHeader {
    * @param headerByte
    * @return
    */
-  def calcPayloadDescriptor(headerByte: Array[Byte]): Short = {
+  def calcPayloadDescriptor(headerByte: Array[Byte]): Int = {
     if (headerByte.length != headerSize) {
       Logger.error("header size is incorrect")
       return -1
     }
     // unsigned にする
-    val descriptorType = headerByte(payloadDescriptorOffset)
+    val descriptorType = ByteBuffer.allocate(4).put(0,0).put(1,0).put(2,0)
+      .put(3,headerByte(payloadDescriptorOffset)).getInt(0)
+    Logger.debug("descriptorType-> " + descriptorType)
     if (descriptorType > 0) descriptorType else -descriptorType
   }
 

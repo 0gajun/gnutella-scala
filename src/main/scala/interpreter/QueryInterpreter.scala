@@ -10,7 +10,7 @@ import akka.actor.ActorContext
 import akka.pattern.ask
 import akka.util.Timeout
 import descriptor.{QueryHitsDescriptor, QueryDescriptor}
-import descriptor.QueryHitsDescriptor.ResultSet
+import descriptor.QueryHitsDescriptor.Result
 import gnutella.Gnutella
 import util.{ActorUtil, Logger}
 
@@ -31,6 +31,7 @@ object QueryInterpreter extends HeaderInterpreter {
               callerContext: ActorContext): Option[QueryDescriptor] = {
     val query = parse(header, payload)
     Logger.info("query: " + query.descriptorId)
+    Logger.debug("query->criteria: " + query.searchCriteria)
     processQuery(query, callerContext)
     Option(query)
   }
@@ -73,7 +74,7 @@ object QueryInterpreter extends HeaderInterpreter {
     queryHits.ipAddress = InetAddress.getLocalHost
     queryHits.firewalledIndicator = false //TODO:適切に判断
     queryHits.xmlMetaData = false
-    queryHits.setResultSets(buildResultSets(result))
+    queryHits.resultSet_(buildResultSet(result))
     queryHits.optionalQhdData = Array() // Optionなので無視
     queryHits.serventIdentifier = Gnutella.getServentIdentifier
 
@@ -85,8 +86,8 @@ object QueryInterpreter extends HeaderInterpreter {
    * @param result
    * @return
    */
-  private def buildResultSets(result: List[SharedFileManagerActor.FileInfo]): Array[ResultSet] = {
-    result map(fi => new ResultSet(fi._4, fi._2, fi._3, "")) toArray
+  private def buildResultSet(result: List[SharedFileManagerActor.FileInfo]): Array[Result] = {
+    result map(fi => new Result(fi._4, fi._2, fi._1, "")) toArray
   }
 
   /**
@@ -99,14 +100,13 @@ object QueryInterpreter extends HeaderInterpreter {
     val query = new QueryDescriptor
     parseHeader(header, query)
 
-    val head = header.slice(0,2)
-    val tail = header.slice(2,header.length)
+    val head = payload.slice(0,2)
+    val tail = payload.slice(2,payload.length)
     query.minimumSpeed = ByteBuffer.allocate(2).put(head)
       .order(ByteOrder.LITTLE_ENDIAN).getShort(0)
 
     val criteriaByte = tail takeWhile(_ != 0.toByte)
-    query.searchCriteria = new String(ByteBuffer.allocate(criteriaByte.length)
-      .put(criteriaByte).order(ByteOrder.LITTLE_ENDIAN).array)
+    query.searchCriteria = new String(criteriaByte.reverse, "UTF-8")
 
     // 拡張用なので無視
     // query.queryData

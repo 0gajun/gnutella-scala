@@ -15,7 +15,7 @@ object DescriptorInterpreter {
       case DescriptorHeader.P_DESC_PING => PingInterpreter.execute(header, payload, callerContext)
       case DescriptorHeader.P_DESC_PONG => PongInterpreter.execute(header, payload, callerContext)
       case DescriptorHeader.P_DESC_QUERY => QueryInterpreter.execute(header, payload, callerContext)
-      case DescriptorHeader.P_DESC_QUERY_HITS => Logger.info("not implemented"); None
+      case DescriptorHeader.P_DESC_QUERY_HITS => QueryHitsInterpreter.execute(header, payload, callerContext)
       case DescriptorHeader.P_DESC_PUSH => Logger.info("not implemented"); None
       case value => Logger.error("Unknown payloadDescriptor type(" + value + "). discard."); None
     }

@@ -19,7 +19,7 @@ class QueryDescriptor extends DescriptorHeader {
   override def toByteArray(): Array[Byte] = {
     val header = convertHeaderToByteArray()
     val speedByte = ByteBuffer.allocate(2).putShort(minimumSpeed).array.reverse
-    val criteriaByte = searchCriteria.getBytes.reverse
+    val criteriaByte = searchCriteria.getBytes("UTF-8").reverse
     val nullByte = Array(0.toByte)
 
     Array.concat(header, speedByte, criteriaByte, nullByte, queryData.reverse)

@@ -87,7 +87,7 @@ class ConnectionActor extends Actor {
    * @param header
    */
   private def onReceiveMessage(header: Array[Byte]): Unit = {
-    Logger.info("message receive")
+    Logger.info("message receive from " + socket.getRemoteSocketAddress)
     val len = DescriptorHeader.calcPayloadLength(header)
     val payload = if (len > 0) readPayload(len).get else Array[Byte]()
 
