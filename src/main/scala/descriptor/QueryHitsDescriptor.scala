@@ -4,6 +4,8 @@ import java.net.{InetAddress, Inet4Address}
 import java.nio.ByteBuffer
 
 import descriptor.QueryHitsDescriptor.Result
+import org.apache.commons.codec.binary.Hex
+import util.Logger
 
 import scala.collection.mutable
 
@@ -44,11 +46,11 @@ class QueryHitsDescriptor extends DescriptorHeader {
     val portByte = ByteBuffer.allocate(2).putShort(port).array.reverse
     val ipByte = ipAddress.getAddress
     val speedByte = getSpeedByte
-    val idByte = serventIdentifier.getBytes.reverse
+    val idByte = Hex.decodeHex(serventIdentifier.toCharArray).reverse
     val resultByte = getResultSetByte
     val optionByte = optionalQhdData.reverse
 
-    Array.concat(header, numberOfHitsByte,portByte, ipByte, speedByte, resultByte, optionByte, idByte)
+    Array.concat(header, numberOfHitsByte, portByte, ipByte, speedByte, resultByte, optionByte, idByte)
   }
 
   private def getResultSetByte: Array[Byte] = {
