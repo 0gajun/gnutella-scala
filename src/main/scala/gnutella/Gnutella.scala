@@ -37,6 +37,7 @@ object Gnutella {
       val query = new QueryDescriptor
       query.minimumSpeed = 0
       query.searchCriteria = "test"
+      gnutellaStatus = GnutellaStatus.waitingQueryHits
       connectionManager ! SendMessageToAllConnections(query)
     }
   }

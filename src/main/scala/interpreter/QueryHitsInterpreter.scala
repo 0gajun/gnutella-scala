@@ -6,6 +6,7 @@ import java.nio.{ByteOrder, ByteBuffer}
 import akka.actor.ActorContext
 import descriptor.QueryHitsDescriptor
 import descriptor.QueryHitsDescriptor.Result
+import gnutella.{GnutellaStatus, Gnutella}
 import util.Logger
 
 import scala.collection.mutable.ListBuffer
@@ -20,12 +21,12 @@ object QueryHitsInterpreter extends HeaderInterpreter {
               callerContext: ActorContext): Option[QueryHitsDescriptor] = {
     val queryHits = parse(header, payload)
 
-    queryHits.resultSet.foreach( r =>
-      Logger.info("QueryHits! -> " + r.sharedFileName)
-    )
-
-    //Option(queryHits)
-    None
+    if (Gnutella.getStatus == GnutellaStatus.waitingQueryHits) {
+      queryHits.resultSet.foreach(r =>
+        Logger.info("QueryHits! -> " + r.sharedFileName)
+      )
+    }
+    Option(queryHits)
   }
 
   private def parse(header: Array[Byte], payload: Array[Byte]): QueryHitsDescriptor = {
@@ -63,6 +64,11 @@ object QueryHitsInterpreter extends HeaderInterpreter {
     }
   }
 
+  /**
+   * Result set のパースを行なう
+   * @param payload
+   * @param queryHits
+   */
   private def parseResultSet(payload: Array[Byte], queryHits: QueryHitsDescriptor): Unit = {
     //Optional QHDは無いと仮定
     val rsBytes = payload.slice(QueryHitsDescriptor.resultSetOffset, payload.length - 16)
@@ -70,8 +76,8 @@ object QueryHitsInterpreter extends HeaderInterpreter {
     var offset = 0
     while (offset < rsBytes.length) {
       parseResult(rsBytes.slice(offset, rsBytes.length)) match {
-        case Some(r) => resultSet+=r; offset += r.getByteSize
-        case None =>offset = Int.MaxValue
+        case Some(r) => resultSet += r; offset += r.getByteSize
+        case None => offset = Int.MaxValue
       }
     }
     queryHits.resultSet_(resultSet.toArray)
@@ -86,16 +92,13 @@ object QueryHitsInterpreter extends HeaderInterpreter {
     if (bytesHead.length <= 10) {
       return None
     }
-    val fileIndex = ByteBuffer.allocate(4).put(bytesHead.slice(0,4))
+    val fileIndex = ByteBuffer.allocate(4).put(bytesHead.slice(0, 4))
       .order(ByteOrder.LITTLE_ENDIAN).getInt(0)
-    Logger.debug("fileIndex->" + fileIndex)
     val fileSize = ByteBuffer.allocate(4).put(bytesHead.slice(4, 8))
       .order(ByteOrder.LITTLE_ENDIAN).getInt(0)
-    Logger.debug("fileSize->" + fileSize)
     val fileName = new String(
       bytesHead.slice(8, bytesHead.length).takeWhile(_ != 0.toByte).reverse
     )
-    Logger.debug("fileName->" + fileName)
     val option = new String(
       // 8 + file名の長さ + Null文字分1Byte
       bytesHead.slice(8 + fileName.getBytes.length + 1, bytesHead.length)

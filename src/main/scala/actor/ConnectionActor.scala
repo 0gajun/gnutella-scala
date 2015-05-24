@@ -6,7 +6,7 @@ import java.net.Socket
 import akka.actor.{ActorRef, Actor}
 import descriptor._
 import interpreter.DescriptorInterpreter
-import util.Logger
+import util.{DescriptorUtil, Logger}
 
 import scala.util.Try
 
@@ -46,7 +46,7 @@ class ConnectionActor extends Actor {
    * @param message
    */
   private def sendMessage(message: DescriptorHeader) = {
-    Logger.debug("send message")
+    Logger.debug("send message. type-> " + DescriptorUtil.getTypeStringOfDescriptor(message))
     val byteArray = message.toByteArray()
     Logger.debug("byteArray->" + byteArray.length)
     if (output == null)
