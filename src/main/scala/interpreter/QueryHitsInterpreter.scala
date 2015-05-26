@@ -47,8 +47,7 @@ object QueryHitsInterpreter extends HeaderInterpreter {
 
     // OptionalQHDはOptionalなので無いはず
 
-    queryHits.serventIdentifier = new String(ByteBuffer.allocate(16)
-      .put(payload.slice(payload.length - 16, payload.length)).order(ByteOrder.LITTLE_ENDIAN).array())
+    queryHits.serventIdentifier = new String(payload.slice(payload.length - 16, payload.length))
 
     queryHits
   }
@@ -97,7 +96,7 @@ object QueryHitsInterpreter extends HeaderInterpreter {
     val fileSize = ByteBuffer.allocate(4).put(bytesHead.slice(4, 8))
       .order(ByteOrder.LITTLE_ENDIAN).getInt(0)
     val fileName = new String(
-      bytesHead.slice(8, bytesHead.length).takeWhile(_ != 0.toByte).reverse
+      bytesHead.slice(8, bytesHead.length).takeWhile(_ != 0.toByte)
     )
     val option = new String(
       // 8 + file名の長さ + Null文字分1Byte

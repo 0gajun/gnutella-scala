@@ -28,25 +28,13 @@ abstract class DescriptorHeader() {
   def descriptorId(id: String) = { _descriptorId = id }
 
   def convertHeaderToByteArray(): Array[Byte] = {
-    val array: Array[Byte] = new Array[Byte](DescriptorHeader.headerSize)
-    var offset = DescriptorHeader.headerSize - 1
+    val idBytes = Hex.decodeHex(descriptorId.toCharArray)
+    val descBytes = Array(payloadDescriptor.toByte)
+    val lengthBytes = ByteBuffer.allocate(4).putInt(payloadLength).array().reverse
+    val ttlBytes = Array(ttl.toByte)
+    val hopsBytes = Array(hops.toByte)
 
-    // リトルエンディアンで格納する
-    ByteBuffer.allocate(4).putInt(payloadLength).array.foreach( b => {
-      array(offset) = b
-      offset -= 1
-    })
-    array(offset) = hops.toByte
-    array(offset-1) = ttl.toByte
-    array(offset-2) = payloadDescriptor.toByte
-    offset -= 3
-
-    Hex.decodeHex(descriptorId.toCharArray).foreach(b => {
-      array(offset) = b
-      offset -= 1
-    })
-
-    array
+    Array.concat(idBytes, descBytes, ttlBytes, hopsBytes, lengthBytes)
   }
 
   def toByteArray(): Array[Byte]

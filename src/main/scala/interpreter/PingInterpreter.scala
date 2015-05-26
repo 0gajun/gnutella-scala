@@ -56,7 +56,7 @@ object PingInterpreter extends HeaderInterpreter {
    */
   private def parse(header: Array[Byte], payload: Array[Byte]): PingDescriptor = {
     val ping = new PingDescriptor
-    ping.optionalPingData = payload.reverse
+    ping.optionalPingData = payload
     parseHeader(header, ping)
     ping
   }

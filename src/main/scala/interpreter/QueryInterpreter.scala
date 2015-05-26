@@ -105,8 +105,7 @@ object QueryInterpreter extends HeaderInterpreter {
     query.minimumSpeed = ByteBuffer.allocate(2).put(head)
       .order(ByteOrder.LITTLE_ENDIAN).getShort(0)
 
-    val criteriaByte = tail takeWhile(_ != 0.toByte)
-    query.searchCriteria = new String(criteriaByte.reverse, "UTF-8")
+    query.searchCriteria = new String(tail.takeWhile(_ != 0.toByte))
 
     // 拡張用なので無視
     // query.queryData

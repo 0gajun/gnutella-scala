@@ -46,9 +46,9 @@ class QueryHitsDescriptor extends DescriptorHeader {
     val portByte = ByteBuffer.allocate(2).putShort(port).array.reverse
     val ipByte = ipAddress.getAddress
     val speedByte = getSpeedByte
-    val idByte = Hex.decodeHex(serventIdentifier.toCharArray).reverse
+    val idByte = Hex.decodeHex(serventIdentifier.toCharArray)
     val resultByte = getResultSetByte
-    val optionByte = optionalQhdData.reverse
+    val optionByte = optionalQhdData
 
     Array.concat(header, numberOfHitsByte, portByte, ipByte, speedByte, resultByte, optionByte, idByte)
   }
@@ -92,8 +92,8 @@ object QueryHitsDescriptor {
   class Result(val fileIndex: Int, val fileSize: Int, val sharedFileName: String, val optionalResultData: String) {
     private val indexByte = ByteBuffer.allocate(4).putInt(fileIndex).array.reverse
     private val sizeByte = ByteBuffer.allocate(4).putInt(fileSize).array.reverse
-    private val nameByte = sharedFileName.getBytes.reverse
-    private val optionByte = optionalResultData.getBytes.reverse
+    private val nameByte = sharedFileName.getBytes
+    private val optionByte = optionalResultData.getBytes
     private val nullByte = Array(0.toByte)
     val byteArray = Array.concat(indexByte, sizeByte, nameByte, nullByte, optionByte, nullByte)
 

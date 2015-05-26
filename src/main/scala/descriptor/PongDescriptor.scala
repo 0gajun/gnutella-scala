@@ -25,7 +25,7 @@ class PongDescriptor extends DescriptorHeader {
     val numFileByte = ByteBuffer.allocate(4).putInt(numberOfFilesShared).array.reverse
     val numKiloByte = ByteBuffer.allocate(4).putInt(numberOfKilobytesShared).array().reverse
     Array.concat(header, portByte, ipAddress.getAddress, numFileByte,
-      numKiloByte, optionalPongData.reverse)
+      numKiloByte, optionalPongData)
   }
 
 }

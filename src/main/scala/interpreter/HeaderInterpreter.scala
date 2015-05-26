@@ -18,7 +18,7 @@ abstract class HeaderInterpreter {
    * @param desc
    */
   def parseHeader(header: Array[Byte], desc: DescriptorHeader): Unit = {
-    desc.descriptorId(Hex.encodeHexString(header.slice(0, 16).reverse))
+    desc.descriptorId(Hex.encodeHexString(header.slice(0, 16)))
     //Hopsの増加及びTTLの減少
     desc.ttl = header(17).toInt - 1
     desc.hops = header(18).toInt + 1
