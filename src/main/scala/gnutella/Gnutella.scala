@@ -16,6 +16,10 @@ import scala.util.Try
  * Created by Junya on 15/05/07.
  */
 object Gnutella {
+
+  val CONNECTION_REQUEST_MSG = "GNUTELLA CONNECT/0.4\n\n"
+  val CONNECTION_OK_MSG = "GNUTELLA OK\n\n"
+
   private[this] var gnutellaStatus: Int = GnutellaStatus.initializing
   private[this] val serventIdentifier: String = UUID.randomUUID().toString.replace("-", "")
 
@@ -53,7 +57,7 @@ object Gnutella {
     print("please input IPAddress: ")
     val ipAddress = InetAddress.getByName(scala.io.StdIn.readLine())
     print("please input port: ")
-    val port = scala.io.StdIn.readShort()
+    val port = scala.io.StdIn.readInt()
 
     setUpFirstConnection(ipAddress, port)
     gnutellaStatus = GnutellaStatus.waitingPong
@@ -83,7 +87,7 @@ object Gnutella {
     manager
   }
 
-  private def setUpFirstConnection(ipAddress: InetAddress, port: Short): Unit = {
+  private def setUpFirstConnection(ipAddress: InetAddress, port: Int): Unit = {
     Try(new Socket(ipAddress, port)).toOption match {
       case Some(s) =>
         negotiateConnection(s) match {
@@ -109,10 +113,9 @@ object Gnutella {
    * @param socket 接続対象のソケット
    */
   private def requestConnection(socket: Socket): Unit = {
-    val connReqStr = "GNUTELLA CONNECT/0.4\n\n"
     val output = new BufferedOutputStream(socket.getOutputStream)
 
-    output.write(connReqStr.getBytes)
+    output.write(Gnutella.CONNECTION_REQUEST_MSG.getBytes)
     output.flush()
   }
 
@@ -123,10 +126,12 @@ object Gnutella {
    */
   private def recvRespondToReq(sock: Socket): Option[String] = {
     val input = scala.io.Source.fromInputStream(sock.getInputStream)
-    Try(input.getLines().takeWhile(!_.isEmpty).foldLeft("")(_ + _)).toOption match {
+
+    // 改行が消えるので追加する
+    Try(input.getLines().takeWhile(!_.isEmpty).mkString + "\n\n").toOption match {
       case Some(s) =>
         s match {
-          case "GNUTELLA OK\n\n" => None
+          case CONNECTION_OK_MSG => None
           case msg => Option("Cannot connect to the servent which you specified. Message->" + msg)
           case _ => Logger.fatal("Unknown Error@recvRespondToReq"); Option("Unknown")
         }
