@@ -69,7 +69,7 @@ class QueryHitsDescriptor extends DescriptorHeader {
         extend |= QueryHitsDescriptor.xmlMetadataBitMask
       ByteBuffer.allocate(4).putInt(extend).array.reverse
     } else {
-      val legacy: Int = speed & 0x01111111 // Legacy format
+      val legacy: Int = speed & QueryHitsDescriptor.legacyFormatBitMask // Legacy format
       ByteBuffer.allocate(4).putInt(legacy).array.reverse
     }
   }
@@ -77,9 +77,10 @@ class QueryHitsDescriptor extends DescriptorHeader {
 
 object QueryHitsDescriptor {
 
-  val extendBitMask: Int = 0x10000000
-  val firewallBitMask: Int = 0x01000000
-  val xmlMetadataBitMask: Int = 0x00100000
+  val extendBitMask = Integer.parseInt("10000000", 2)
+  val firewallBitMask = Integer.parseInt("01000000", 2)
+  val xmlMetadataBitMask = Integer.parseInt("00100000", 2)
+  val legacyFormatBitMask = Integer.parseInt("01111111", 2)
 
   val resultSetOffset = 11
   val serventIdLength = 16
