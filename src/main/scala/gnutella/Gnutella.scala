@@ -1,5 +1,6 @@
 package gnutella
 
+import java.io.BufferedOutputStream
 import java.net.{Socket, InetAddress}
 import java.util.UUID
 
@@ -15,6 +16,10 @@ import scala.util.Try
  * Created by Junya on 15/05/07.
  */
 object Gnutella {
+
+  val CONNECTION_REQUEST_MSG = "GNUTELLA CONNECT/0.4\n\n"
+  val CONNECTION_OK_MSG = "GNUTELLA OK\n\n"
+
   private[this] var gnutellaStatus: Int = GnutellaStatus.initializing
   private[this] val serventIdentifier: String = UUID.randomUUID().toString.replace("-", "")
 
@@ -24,9 +29,7 @@ object Gnutella {
 
   def getStatus = gnutellaStatus
 
-  def isWaitingPong = { gnutellaStatus == GnutellaStatus.waitingPong }
-
-
+  def isWaitingPong = gnutellaStatus == GnutellaStatus.waitingPong
 
   def main(args: Array[String]): Unit = {
     println("Welcome to gnutella!!!")
@@ -51,7 +54,12 @@ object Gnutella {
     if (c.equals('n'))
       return
 
-    setUpFirstConnection(connectionManager)
+    print("please input IPAddress: ")
+    val ipAddress = InetAddress.getByName(scala.io.StdIn.readLine())
+    print("please input port: ")
+    val port = scala.io.StdIn.readInt()
+
+    setUpFirstConnection(ipAddress, port)
     gnutellaStatus = GnutellaStatus.waitingPong
     sendPing(connectionManager)
 
@@ -62,32 +70,72 @@ object Gnutella {
   }
 
   /**
-   *
+   * 本アプリケーションで使用するActorを起動する(ConnectionActor以外)
    * @return ConnectionManager
    */
   private def setUpActors(): ActorRef = {
     val system = ActorSystem("gnutellaActorSystem")
     val manager = system.actorOf(Props[ConnectionManagerActor], ConnectionManagerActor.name)
-    system.actorOf(Props[ServentsManagerActor], ServentsManagerActor.name)
     val listen = system.actorOf(Props[ListenConnectionActor], ListenConnectionActor.name)
-    listen ! ListenConnectionActor.ListenConnection
-
     val fileManager = system.actorOf(Props[SharedFileManagerActor], SharedFileManagerActor.name)
+    system.actorOf(Props[ServentsManagerActor], ServentsManagerActor.name)
+
+    listen ! ListenConnectionActor.ListenConnection
     fileManager ! SharedFileManagerActor.Initialize
 
     connectionManager = manager
     manager
   }
 
-  private def setUpFirstConnection(connectionManager: ActorRef): Unit = {
-    print("please input IPAddress: ")
-    val ipAddress = InetAddress.getByName(scala.io.StdIn.readLine())
-    print("please input port: ")
-    val port = scala.io.StdIn.readShort()
-
-    Try( new Socket(ipAddress, port) ).toOption match {
-      case Some(s) => connectionManager ! RunConnectionActor(s)
+  private def setUpFirstConnection(ipAddress: InetAddress, port: Int): Unit = {
+    Try(new Socket(ipAddress, port)).toOption match {
+      case Some(s) =>
+        negotiateConnection(s) match {
+          case None => connectionManager ! RunConnectionActor(s)
+          case Some(msg) => Logger.debug(msg)
+        }
       case None => fatal("cannot create socket.")
+    }
+  }
+
+  /**
+   * 初回接続要求を行なう
+   * @param socket 接続対象のソケット
+   * @return エラーが生じた場合はエラーメッセージを返す.正常終了はNone
+   */
+  private def negotiateConnection(socket: Socket): Option[String] = {
+    requestConnection(socket)
+    recvRespondToReq(socket)
+  }
+
+  /**
+   * 接続要求メッセージを送信する
+   * @param socket 接続対象のソケット
+   */
+  private def requestConnection(socket: Socket): Unit = {
+    val output = new BufferedOutputStream(socket.getOutputStream)
+
+    output.write(Gnutella.CONNECTION_REQUEST_MSG.getBytes)
+    output.flush()
+  }
+
+  /**
+   * 接続要求に対する応答を受信する
+   * @param sock 接続要求を送ったソケット
+   * @return エラーが生じた場合はエラーメッセージを返す．正常終了はNone
+   */
+  private def recvRespondToReq(sock: Socket): Option[String] = {
+    val input = scala.io.Source.fromInputStream(sock.getInputStream)
+
+    // 改行が消えるので追加する
+    Try(input.getLines().takeWhile(!_.isEmpty).mkString + "\n\n").toOption match {
+      case Some(s) =>
+        s match {
+          case CONNECTION_OK_MSG => None
+          case msg => Option("Cannot connect to the servent which you specified. Message->" + msg)
+          case _ => Logger.fatal("Unknown Error@recvRespondToReq"); Option("Unknown")
+        }
+      case None => Option("timeout negotiation.")
     }
   }
 
