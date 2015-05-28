@@ -4,6 +4,7 @@ import java.io.File
 
 import actor.SharedFileManagerActor.{FileInfo, FileSearch, Initialize, RegisterNewFile}
 import akka.actor.Actor
+import model.Settings
 import util.Logger
 
 import scala.collection.mutable
@@ -15,8 +16,8 @@ import scala.collection.mutable
 class SharedFileManagerActor extends Actor {
 
 
-  private val DEFAULT_SHARED_FOLDER_PATH = "./shared/"
-  private val rootFolder = new File(DEFAULT_SHARED_FOLDER_PATH)
+
+  private val rootFolder = new File(Settings.DEFAULT_SHARED_FOLDER_PATH)
 
   private[this] val fileEntries = new mutable.ListBuffer[FileInfo]()
 
