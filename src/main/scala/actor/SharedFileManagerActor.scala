@@ -2,12 +2,13 @@ package actor
 
 import java.io.File
 
-import actor.SharedFileManagerActor.{FileInfo, FileSearch, Initialize, RegisterNewFile}
+import actor.SharedFileManagerActor._
 import akka.actor.Actor
 import model.Settings
 import util.Logger
 
 import scala.collection.mutable
+import scala.util.Try
 
 /**
  * Gnutellaクライアントにおける共有ファイルを管理するアクター
@@ -25,6 +26,7 @@ class SharedFileManagerActor extends Actor {
     case Initialize => initialize()
     case FileSearch(f, b) => sender ! search(f, b)
     case RegisterNewFile(f) => registrationRequestHandler(f)
+    case FindByIndex(i) => sender ! Try(fileEntries(i)).toOption
   }
 
   /**
@@ -122,7 +124,6 @@ class SharedFileManagerActor extends Actor {
     val reg = ".*" + query + ".*"
     fileEntries filter (_._1.matches(reg)) toList
   }
-
 }
 
 object SharedFileManagerActor {
@@ -134,5 +135,5 @@ object SharedFileManagerActor {
   case class Initialize()
   case class RegisterNewFile(file: File)
   case class FileSearch(fileName: String, isLikeSearch: Boolean)
-
+  case class FindByIndex(fileIndex: Int)
 }
