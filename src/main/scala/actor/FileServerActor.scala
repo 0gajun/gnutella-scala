@@ -5,7 +5,7 @@ import java.net.{Socket, ServerSocket}
 import java.util.concurrent.TimeUnit
 
 import actor.FileServerActor._
-import actor.SharedFileManagerActor.{FileInfo, FindByIndex, FileSearch}
+import actor.SharedFileManagerActor.{FileInfo, FindByIndex}
 import akka.actor.Actor
 import akka.pattern._
 import akka.util.Timeout

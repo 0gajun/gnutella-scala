@@ -4,7 +4,7 @@ import java.io._
 import java.net.{Socket, InetAddress}
 
 import actor.DownloaderActor.Download
-import akka.actor.Actor
+import akka.actor.{Kill, Actor}
 import model.Settings
 import util.Logger
 
@@ -34,9 +34,16 @@ class DownloaderActor extends Actor {
         output = s.getOutputStream
         socket = s
         requestDownload(fileIndex, fileName, 0) //TODO: Resumeに対応
-        recvResponse(fileName, 0)
+        val contentLen = recvResponse(fileName, 0)
+
+        if (contentLen > 0) {
+          recvData(fileName, contentLen)
+        }
       case None => Logger.debug("cannot open socket@download")
     }
+    socket.close()
+
+    self ! Kill
   }
 
   private def requestDownload(fileIndex: Int, fileName: String, offset: Long): Unit = {
@@ -50,7 +57,7 @@ class DownloaderActor extends Actor {
     output.flush()
   }
 
-  private def recvResponse(fileName: String, offset: Long): Unit = {
+  private def recvResponse(fileName: String, offset: Long): Long = {
     val responseLines = new ArrayBuffer[String]()
 
     // ヘッダ部分のみを読み込むために,あえてInputStreamをラップしないで読み込む
@@ -62,17 +69,17 @@ class DownloaderActor extends Actor {
 
     responseLines.head match {
       case "HTTP/1.0 200 OK" => Logger.debug("Download request is accepted!")
-      case _ => Logger.debug("Error1@recvResponse") // TODO: ErrorHandling
+      case msg => Logger.info("RequestRefused! Message->" + msg); return -1
     }
 
     val headers = responseLines.tail.foldLeft(Map.empty[String, String])(_ ++ parseHeader(_))
 
     headers.get("Content-Length") match {
       case Some(len) => Try(len.toLong).toOption match {
-        case Some(contentLen) => recvData(fileName, contentLen)
-        case None => Logger.debug("Error2@recvResponse") // TODO: ErrorHandling
+        case Some(contentLen) => contentLen
+        case None => Logger.info("Invalid format response received..."); -1
       }
-      case _ => Logger.debug("Error3@recvRespose") //TODO: ErrorHandling
+      case _ => Logger.info("Invalid format response received..."); -1
     }
   }
 
