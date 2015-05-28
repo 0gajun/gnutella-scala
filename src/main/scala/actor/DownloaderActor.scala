@@ -2,14 +2,13 @@ package actor
 
 import java.io._
 import java.net.{Socket, InetAddress}
-import java.nio.file.Files
 
 import actor.DownloaderActor.Download
 import akka.actor.Actor
-import akka.actor.Actor.Receive
 import model.Settings
 import util.Logger
 
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
 
 /**
@@ -20,6 +19,10 @@ class DownloaderActor extends Actor {
 
   private val FILE_RECV_BUF_SIZE = 1024
 
+  private var input: InputStream = _
+  private var output: OutputStream = _
+  private var socket: Socket = _
+
   override def receive: Receive = {
     case Download(ip, port, fileIndex, fileName) => download(ip, port, fileIndex, fileName)
   }
@@ -27,69 +30,89 @@ class DownloaderActor extends Actor {
   private def download(ip: InetAddress, port: Int, fileIndex: Int, fileName: String): Unit = {
     Try(new Socket(ip, port)).toOption match {
       case Some(s) =>
-        requestDownload(s, fileIndex, fileName, 0) //TODO: Resumeに対応
-        recvResponse(s, fileName, 0)
-      case None =>
+        input = s.getInputStream
+        output = s.getOutputStream
+        socket = s
+        requestDownload(fileIndex, fileName, 0) //TODO: Resumeに対応
+        recvResponse(fileName, 0)
+      case None => Logger.debug("cannot open socket@download")
     }
   }
 
-  private def requestDownload(socket: Socket, fileIndex: Int, fileName: String, offset: Long): Unit = {
-    val msg = "GET /get/${fileIndex}/${fileName}/ HTTP/1.0\r\n" +
+  private def requestDownload(fileIndex: Int, fileName: String, offset: Long): Unit = {
+    val msg = s"GET /get/${fileIndex}/${fileName}/ HTTP/1.0\r\n" +
       "User-Agent: Gnutella/0.4\r\n" +
-      "Range: bytes=${offset}-\r\n" +
+      s"Range: bytes=${offset}-\r\n" +
       "Connection: Keep-Alive\r\n" +
       "\r\n"
 
-    val output = new BufferedOutputStream(socket.getOutputStream)
     output.write(msg.getBytes)
     output.flush()
   }
 
-  private def recvResponse(socket: Socket, fileName: String, offset: Long): Unit = {
-    val responseLines = scala.io.Source.fromInputStream(socket.getInputStream)
-      .getLines().takeWhile(!_.isEmpty).toList
+  private def recvResponse(fileName: String, offset: Long): Unit = {
+    val responseLines = new ArrayBuffer[String]()
+
+    // ヘッダ部分のみを読み込むために,あえてInputStreamをラップしないで読み込む
+    // 後のデータ受信の為
+    var line: String = ""
+    while ({ line = readLine(); !line.isEmpty }) {
+      responseLines+=line
+    }
 
     responseLines.head match {
       case "HTTP/1.0 200 OK" => Logger.debug("Download request is accepted!")
-      case _ => // TODO: ErrorHandling
+      case _ => Logger.debug("Error1@recvResponse") // TODO: ErrorHandling
     }
 
     val headers = responseLines.tail.foldLeft(Map.empty[String, String])(_ ++ parseHeader(_))
 
     headers.get("Content-Length") match {
       case Some(len) => Try(len.toLong).toOption match {
-        case Some(contentLen) => recvData(socket, fileName, contentLen)
-        case None => // TODO: ErrorHandling
+        case Some(contentLen) => recvData(fileName, contentLen)
+        case None => Logger.debug("Error2@recvResponse") // TODO: ErrorHandling
       }
-      case _ => //TODO: ErrorHandling
+      case _ => Logger.debug("Error3@recvRespose") //TODO: ErrorHandling
     }
   }
 
   /**
+   * InputStreamから一文字ずつ読み込みを行い，1行分を受信して返す
+   * @return
+   */
+  private def readLine(): String = {
+    var data: Int = 0
+    var buf = ArrayBuffer[Byte]()
+    while ({ data = input.read(); data != '\n'}) {
+      if (data != '\r') {
+        buf+=data.toByte
+      }
+    }
+    new String(buf.toArray)
+  }
+
+  /**
    * データを受信して，ファイルに保存する
-   * @param socket
    * @param fileName
    * @param contentLen
    */
-  private def recvData(socket: Socket, fileName: String, contentLen: Long): Unit = {
-    val input = new BufferedInputStream(socket.getInputStream)
-    val output = new BufferedOutputStream(new FileOutputStream(Settings.DEFAULT_SHARED_FOLDER_PATH + fileName))
-
+  private def recvData(fileName: String, contentLen: Long): Unit = {
+    val input = new BufferedInputStream(this.input)
+    val output = new BufferedOutputStream(new FileOutputStream(Settings.DEFAULT_SHARED_FOLDER_PATH + "testRecv")) //fileName))
     val buf = new Array[Byte](FILE_RECV_BUF_SIZE)
 
-    var recvedSize = 0
+    var size = 0
 
-    do {
-      val size = input.read(buf)
-      recvedSize+=size
+    while ({ size = input.read(buf); size != -1 }) {
       output.write(buf, 0, size)
-    } while (recvedSize < contentLen)
+    }
 
     output.flush()
+    Logger.info("Download completed!->" + fileName)
   }
 
   private def parseHeader(line: String): Map[String, String] = {
-    val pair = line.split(":")
+    val pair = line.replace(" ", "").split(":")
     Map(pair(0) -> pair(1))
   }
 

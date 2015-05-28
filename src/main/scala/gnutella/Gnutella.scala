@@ -78,10 +78,12 @@ object Gnutella {
     val manager = system.actorOf(Props[ConnectionManagerActor], ConnectionManagerActor.name)
     val listen = system.actorOf(Props[ListenConnectionActor], ListenConnectionActor.name)
     val fileManager = system.actorOf(Props[SharedFileManagerActor], SharedFileManagerActor.name)
+    val fileServer = system.actorOf(Props[FileServerActor], FileServerActor.name)
     system.actorOf(Props[ServentsManagerActor], ServentsManagerActor.name)
 
     listen ! ListenConnectionActor.ListenConnection
     fileManager ! SharedFileManagerActor.Initialize
+    fileServer ! FileServerActor.Listen
 
     connectionManager = manager
     manager

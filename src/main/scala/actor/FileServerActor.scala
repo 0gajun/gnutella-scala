@@ -32,6 +32,7 @@ class FileServerActor extends Actor {
       case Some(s) => recvRequest(s)
       case None =>
     }
+    self ! Listen
   }
 
   private def recvRequest(socket: Socket): Unit = {
@@ -40,6 +41,8 @@ class FileServerActor extends Actor {
         .getLines()
         .takeWhile(!_.isEmpty)
         .mkString
+
+    Logger.debug("recv file request->" + request)
 
     reqLineRegx.findFirstMatchIn(request) match {
       case Some(m) => sendRequestedFile(socket, Integer.parseInt(m.group("fileIndex")), m.group("fileName")) //値のオーバーフロー処理
@@ -56,8 +59,8 @@ class FileServerActor extends Actor {
     val f = fileManager ? FindByIndex(fileIndex)
 
     f.onComplete {
-      case Success(res) =>
-        res match {
+      case Success(res) => res match {
+        case Some(s) => s match {
           case fileInfo: SharedFileManagerActor.FileInfo =>
             // indexとファイル名が一致するか確認
             if (!fileInfo._1.equals(fileName)) {
@@ -70,6 +73,8 @@ class FileServerActor extends Actor {
 
           case _ => Logger.fatal("unknown type @FileServerActor#sendRequestedFile()")
         }
+        case None => respondFileNotFound(socket)
+      }
       case _ => respondFileNotFound(socket) // File not found
     }
   }
@@ -94,8 +99,10 @@ class FileServerActor extends Actor {
         "\r\n"
     output.write(head.getBytes)
 
-    while (input.read(buf) > 0) {
-      output.write(buf)
+    var size = 0
+    while ({ size = input.read(buf); size != -1 }) {
+      Logger.debug("write to socket, size->" + size)
+      output.write(buf, 0, size)
     }
     output.flush()
   }
@@ -118,6 +125,7 @@ class FileServerActor extends Actor {
 }
 
 object FileServerActor {
+  val name = "FileServerActor"
 
   case class Listen()
 

@@ -12,6 +12,7 @@ import akka.util.Timeout
 import descriptor.{QueryHitsDescriptor, QueryDescriptor}
 import descriptor.QueryHitsDescriptor.Result
 import gnutella.Gnutella
+import model.Settings
 import util.{ActorUtil, Logger}
 
 /**
@@ -70,7 +71,7 @@ object QueryInterpreter extends HeaderInterpreter {
     queryHits.hops = 0
     //Payload
     queryHits.numberOfHits = result.length.toByte
-    queryHits.port = 6346 //TODO: ポート番号どうするか
+    queryHits.port = Settings.FILE_SERVER_PORT.toShort
     queryHits.ipAddress = InetAddress.getLocalHost
     queryHits.firewalledIndicator = false //TODO:適切に判断
     queryHits.xmlMetaData = false
