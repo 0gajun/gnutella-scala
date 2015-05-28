@@ -89,7 +89,8 @@ class DownloaderActor extends Actor {
   }
 
   private def parseHeader(line: String): Map[String, String] = {
-    line.split(":").map(_.replace(" ", "")).toMap[String, String]
+    val pair = line.split(":")
+    Map(pair(0) -> pair(1))
   }
 
 }
