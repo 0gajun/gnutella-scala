@@ -130,9 +130,10 @@ class ConnectionActor extends Actor {
     val buf = new Array[Byte](size)
     Try ( input.read(buf, 0, size) ).toOption match {
       case Some(n) =>
-        if (n == -1)
+        if (n == -1) {
+          socket.close()
           None
-        else
+        } else
           Option(buf)
       case None => None
     }
