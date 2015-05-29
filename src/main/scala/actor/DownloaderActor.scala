@@ -4,9 +4,10 @@ import java.io._
 import java.net.{Socket, InetAddress}
 
 import actor.DownloaderActor.Download
+import actor.SharedFileManagerActor.RegisterNewFile
 import akka.actor.{PoisonPill, Kill, Actor}
 import model.Settings
-import util.Logger
+import util.{ActorUtil, Logger}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
@@ -105,7 +106,8 @@ class DownloaderActor extends Actor {
    */
   private def recvData(fileName: String, contentLen: Long): Unit = {
     val input = new BufferedInputStream(this.input)
-    val output = new BufferedOutputStream(new FileOutputStream(Settings.DEFAULT_SHARED_FOLDER_PATH + "download/" + fileName))
+    val file = new File(Settings.DEFAULT_SHARED_FOLDER_PATH + "download/" + fileName)
+    val output = new BufferedOutputStream(new FileOutputStream(file))
     val buf = new Array[Byte](FILE_RECV_BUF_SIZE)
 
     var size = 0
@@ -115,6 +117,8 @@ class DownloaderActor extends Actor {
     }
 
     output.flush()
+    ActorUtil.getActor(context.system, SharedFileManagerActor.name) ! RegisterNewFile(file)
+    output.close()
     println("Download completed!->" + fileName)
   }
 
