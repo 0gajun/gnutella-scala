@@ -6,7 +6,7 @@ import java.nio.{ByteOrder, ByteBuffer}
 import akka.actor.ActorContext
 import descriptor.QueryHitsDescriptor
 import descriptor.QueryHitsDescriptor.Result
-import gnutella.{GnutellaStatus, Gnutella}
+import gnutella.{ResultSetsPreserver, GnutellaStatus, Gnutella}
 import util.Logger
 
 import scala.collection.mutable.ListBuffer
@@ -22,9 +22,10 @@ object QueryHitsInterpreter extends HeaderInterpreter {
     val queryHits = parse(header, payload)
 
     if (Gnutella.getStatus == GnutellaStatus.waitingQueryHits) {
-      queryHits.resultSet.foreach(r =>
-        Logger.info("QueryHits! -> " + r.sharedFileName)
-      )
+      queryHits.resultSet.foreach(r => {
+        ResultSetsPreserver.addResult(r, queryHits.ipAddress, queryHits.port)
+      })
+      return None
     }
     Option(queryHits)
   }

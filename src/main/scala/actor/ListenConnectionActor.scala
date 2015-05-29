@@ -34,7 +34,7 @@ class ListenConnectionActor extends Actor {
   private def listen(): Unit = {
     val sock = serverSocket.accept()
     if (recvConnectionRequest(sock)) {
-      Logger.info("incoming connection accepted!")
+      println("New servent connected! address->" + sock.getInetAddress + ":" + sock.getPort)
       manager ! RunConnectionActor(sock)
     } else {
       Logger.info("incoming connection is invalid. Close connection")
@@ -81,7 +81,7 @@ class ListenConnectionActor extends Actor {
     super.preStart()
     implicit val timeout = Timeout(1000 nanos)
 
-    Logger.debug("ListenConnectionActor start listen: port->" + listeningPort)
+    println("ListenConnectionActor start listen: port->" + listeningPort)
 
     //ConnectionManagerの取得
     val f = context.system.actorSelection("user/" + ConnectionManagerActor.name).resolveOne()

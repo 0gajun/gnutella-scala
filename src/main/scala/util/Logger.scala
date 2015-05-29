@@ -1,13 +1,20 @@
 package util
 
+import model.Settings
+
 /**
  * ログを吐くためのラッパークラス
  * Created by Junya on 15/05/02.
  */
 object Logger {
 
+  val NONE = 0
+  val INFO = 1
+  val DEBUG = 2
+
   def info(msg: String): Unit = {
-    println("info: " + msg)
+    if (Settings.LOG_LEVEL >= INFO)
+      println("info: " + msg)
   }
 
   def error(msg: String): Unit = {
@@ -15,6 +22,7 @@ object Logger {
   }
 
   def debug(msg: String): Unit = {
+    if (Settings.LOG_LEVEL >= DEBUG )
     println("===Debug===: " + msg)
   }
 

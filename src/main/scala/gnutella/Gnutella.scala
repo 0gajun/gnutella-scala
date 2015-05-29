@@ -2,10 +2,13 @@ package gnutella
 
 import java.io.BufferedOutputStream
 import java.net.{Socket, InetAddress}
-import java.util.UUID
+import java.util.{TimerTask, Timer, UUID}
 
+import actor.DownloaderActor.Download
 import actor._
 import akka.actor.{ActorRef, Props, ActorSystem}
+import akka.pattern._
+import descriptor.QueryHitsDescriptor.Result
 import descriptor.{QueryDescriptor, PingDescriptor}
 import util.Logger
 
@@ -23,6 +26,8 @@ object Gnutella {
   private[this] var gnutellaStatus: Int = GnutellaStatus.initializing
   private[this] val serventIdentifier: String = UUID.randomUUID().toString.replace("-", "")
 
+  private[this] var actorSystem: ActorSystem = _
+
   private[this] var connectionManager: ActorRef = _
 
   def getServentIdentifier = serventIdentifier
@@ -35,16 +40,97 @@ object Gnutella {
     println("Welcome to gnutella!!!")
     setUp()
 
-    println("sendQuery?(y/n)")
-    if (scala.io.StdIn.readChar().equals('y')) {
-      val query = new QueryDescriptor
-      query.minimumSpeed = 0
-      query.searchCriteria = "test"
-      gnutellaStatus = GnutellaStatus.waitingQueryHits
-      connectionManager ! SendMessageToAllConnections(query)
+    var input = ""
+    while (true) {
+      input = scala.io.StdIn.readLine("gnutella %% ")
+      val commands = input.split(" ").map(_.replace(" ", ""))
+
+      commands(0) match {
+        case "query" =>
+          if (commands.length == 2 && !commands(1).isEmpty) {
+            executeQuery(commands(1))
+          } else {
+            println("Command format is invalid. Usage: query <search query>")
+          }
+        case "exit" =>
+          println("Goodbye...")
+          sys.exit()
+        case _ => println("undefined command")
+      }
     }
   }
 
+  private def executeQuery(criteria: String): Unit = {
+    ResultSetsPreserver.initialize()
+    sendQuery(criteria)
+    waitNSec(5)
+    showQueryHitResults()
+
+    var input = ""
+    while({ input = scala.io.StdIn.readLine("gnutella[query] %% "); input != "finish" }) {
+      val commands = input.split(" ").map(_.replace(" ", ""))
+
+      commands(0) match {
+        case "list" => showQueryHitResults()
+        case "get" =>
+          val index = commands(1).toInt
+          val results = ResultSetsPreserver.getResults
+          if (index >= results.length) {
+            println("out of index")
+          }
+          activateDownloader(results(index))//TODO: Intフォーマットバリデーション
+        case s if s.isEmpty =>
+        case _ => println("undefined command")
+      }
+    }
+
+  }
+
+  private def showQueryHitResults(): Unit = {
+    ResultSetsPreserver.getResults match {
+      case res if res.length > 0 =>
+        res.zipWithIndex.foreach(e => println(e._2 + ":file->" + e._1.result.sharedFileName))
+      case _ =>
+        println("NoResult")
+    }
+  }
+
+  private def activateDownloader(result: QueryResultInfo): Unit = {
+    val downloader = actorSystem.actorOf(Props[DownloaderActor])
+    downloader ! Download(result.ip, result.port, result.result.fileIndex, result.result.sharedFileName)
+  }
+
+  private def waitNSec(n: Int): Unit = {
+    print(s"waiting query hits for ${n} seconds")
+    val timer = new Timer()
+
+    class PeriodicTask(val tm: Timer) extends TimerTask {
+      private var count = 0
+      override def run(): Unit = {
+        print(".")
+        count+=1
+        if (count == n) {
+          tm.synchronized {
+            println()
+            tm.cancel()
+            tm.notify()
+          }
+        }
+      }
+    }
+    timer.synchronized {
+      timer.schedule(new PeriodicTask(timer), 0, 1000)
+      timer.wait()
+    }
+  }
+
+  private def sendQuery(criteria: String): Unit = {
+    val query = new QueryDescriptor
+    query.minimumSpeed = 0
+    query.searchCriteria = criteria
+    gnutellaStatus = GnutellaStatus.waitingQueryHits
+    connectionManager ! SendMessageToAllConnections(query)
+  }
 
   private def setUp(): Unit = {
     val connectionManager = setUpActors()
@@ -86,6 +172,7 @@ object Gnutella {
     fileServer ! FileServerActor.Listen
 
     connectionManager = manager
+    actorSystem = system
     manager
   }
 

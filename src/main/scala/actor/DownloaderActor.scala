@@ -4,7 +4,7 @@ import java.io._
 import java.net.{Socket, InetAddress}
 
 import actor.DownloaderActor.Download
-import akka.actor.{Kill, Actor}
+import akka.actor.{PoisonPill, Kill, Actor}
 import model.Settings
 import util.Logger
 
@@ -43,7 +43,7 @@ class DownloaderActor extends Actor {
     }
     socket.close()
 
-    self ! Kill
+    self ! PoisonPill
   }
 
   private def requestDownload(fileIndex: Int, fileName: String, offset: Long): Unit = {
@@ -105,7 +105,7 @@ class DownloaderActor extends Actor {
    */
   private def recvData(fileName: String, contentLen: Long): Unit = {
     val input = new BufferedInputStream(this.input)
-    val output = new BufferedOutputStream(new FileOutputStream(Settings.DEFAULT_SHARED_FOLDER_PATH + "testRecv")) //fileName))
+    val output = new BufferedOutputStream(new FileOutputStream(Settings.DEFAULT_SHARED_FOLDER_PATH + "download/" + fileName))
     val buf = new Array[Byte](FILE_RECV_BUF_SIZE)
 
     var size = 0
@@ -115,7 +115,7 @@ class DownloaderActor extends Actor {
     }
 
     output.flush()
-    Logger.info("Download completed!->" + fileName)
+    println("Download completed!->" + fileName)
   }
 
   private def parseHeader(line: String): Map[String, String] = {
