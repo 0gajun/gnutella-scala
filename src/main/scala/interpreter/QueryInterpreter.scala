@@ -85,7 +85,7 @@ object QueryInterpreter extends HeaderInterpreter {
   private def getLocalAddress(): InetAddress = {
     NetworkUtil.getMyAddress match {
       case Some(addr) => addr
-      case None => Logger.fatal("cannot get local address"); new InetAddress()
+      case None => Logger.fatal("cannot get local address"); InetAddress.getLocalHost
     }
   }
 
