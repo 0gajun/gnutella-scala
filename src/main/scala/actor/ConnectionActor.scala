@@ -99,6 +99,7 @@ class ConnectionActor extends Actor {
         case pong: PongDescriptor => Logger.info("receive pong"); manager ! ForwardMessage(pong)
         case query: QueryDescriptor => Logger.info("receive query"); manager ! BroadcastMessage(this, query)
         case hits: QueryHitsDescriptor => Logger.info("receive queryHits"); manager ! ForwardMessage(hits)
+        case _ => //ErrorHandled in DescriptorInterpreter
       }
       case None => Logger.info("no forwarding message")
     }

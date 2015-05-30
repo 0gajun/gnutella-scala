@@ -52,12 +52,27 @@ object Gnutella {
           } else {
             println("Command format is invalid. Usage: query <search query>")
           }
-        case "exit" =>
+        case "list" =>
+          println("not implemented")
+        case "help" =>
+          showHelp()
+        case "quit" =>
           println("Goodbye...")
           sys.exit()
-        case _ => println("undefined command")
+        case _ =>
+          println("undefined command")
       }
     }
+  }
+
+  private def showHelp(): Unit = {
+    val helpMsg = "\n[Commands]\n" +
+      "query: send file search query.\n" +
+      "\tusage: query <search criteria>\n" +
+      "list: show the list of registered servents.\n" +
+      "quit: quit this program\n"
+
+    println(helpMsg)
   }
 
   private def executeQuery(criteria: String): Unit = {
