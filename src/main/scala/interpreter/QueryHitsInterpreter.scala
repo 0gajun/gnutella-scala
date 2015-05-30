@@ -7,6 +7,7 @@ import akka.actor.ActorContext
 import descriptor.QueryHitsDescriptor
 import descriptor.QueryHitsDescriptor.Result
 import gnutella.{ResultSetsPreserver, GnutellaStatus, Gnutella}
+import org.apache.commons.codec.binary.Hex
 import util.Logger
 
 import scala.collection.mutable.ListBuffer
@@ -48,7 +49,7 @@ object QueryHitsInterpreter extends HeaderInterpreter {
 
     // OptionalQHDはOptionalなので無いはず
 
-    queryHits.serventIdentifier = new String(payload.slice(payload.length - 16, payload.length))
+    queryHits.serventIdentifier = Hex.encodeHexString(payload.slice(payload.length - 16, payload.length))
 
     queryHits
   }
