@@ -56,6 +56,7 @@ class DownloaderActor extends Actor {
 
     output.write(msg.getBytes)
     output.flush()
+    Logger.debug("Download request sent")
   }
 
   private def recvResponse(fileName: String, offset: Long): Long = {

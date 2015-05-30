@@ -13,7 +13,7 @@ import descriptor.{QueryHitsDescriptor, QueryDescriptor}
 import descriptor.QueryHitsDescriptor.Result
 import gnutella.Gnutella
 import model.Settings
-import util.{ActorUtil, Logger}
+import util.{NetworkUtil, ActorUtil, Logger}
 
 /**
  * QueryDescriptorのバイト列を解釈して処理を行なうオブジェクト
@@ -72,7 +72,7 @@ object QueryInterpreter extends HeaderInterpreter {
     //Payload
     queryHits.numberOfHits = result.length.toByte
     queryHits.port = Settings.FILE_SERVER_PORT.toShort
-    queryHits.ipAddress = InetAddress.getLocalHost
+    queryHits.ipAddress = getLocalAddress()
     queryHits.firewalledIndicator = false //TODO:適切に判断
     queryHits.xmlMetaData = false
     queryHits.resultSet_(buildResultSet(result))
@@ -80,6 +80,13 @@ object QueryInterpreter extends HeaderInterpreter {
     queryHits.serventIdentifier = Gnutella.getServentIdentifier
 
     caller.self ! SendMessage(queryHits)
+  }
+
+  private def getLocalAddress(): InetAddress = {
+    NetworkUtil.getMyAddress match {
+      case Some(addr) => addr
+      case None => Logger.fatal("cannot get local address"); new InetAddress()
+    }
   }
 
   /**
