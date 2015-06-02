@@ -76,13 +76,15 @@ object Gnutella {
   }
 
   private def executeQuery(criteria: String): Unit = {
+    gnutellaStatus = GnutellaStatus.waitingQueryHits
     ResultSetsPreserver.initialize()
     sendQuery(criteria)
     waitNSec(5)
     showQueryHitResults()
 
     var input = ""
-    while({ input = scala.io.StdIn.readLine("gnutella[query] %% "); input != "finish" }) {
+    while (gnutellaStatus == GnutellaStatus.waitingQueryHits) {
+      input = scala.io.StdIn.readLine("gnutella[query] %% ")
       val commands = input.split(" ").map(_.replace(" ", ""))
 
       commands(0) match {
@@ -94,6 +96,8 @@ object Gnutella {
             println("out of index")
           }
           activateDownloader(results(index))//TODO: Intフォーマットバリデーション
+        case "finish" =>
+          gnutellaStatus = GnutellaStatus.running // get out from while-loop
         case s if s.isEmpty =>
         case _ => println("undefined command")
       }
@@ -102,9 +106,13 @@ object Gnutella {
   }
 
   private def showQueryHitResults(): Unit = {
+    val formatString = "%10s|%20s|%15s\n"
     ResultSetsPreserver.getResults match {
       case res if res.length > 0 =>
-        res.zipWithIndex.foreach(e => println(e._2 + ":file->" + e._1.result.sharedFileName))
+        printf(formatString, "Index", "FileName", "FileSize(Byte)")
+        res.zipWithIndex.foreach { e =>
+          printf(formatString, e._2 , e._1.result.sharedFileName, e._1.result.fileSize)
+        }
       case _ =>
         println("NoResult")
     }
@@ -143,7 +151,6 @@ object Gnutella {
     val query = new QueryDescriptor
     query.minimumSpeed = 0
     query.searchCriteria = criteria
-    gnutellaStatus = GnutellaStatus.waitingQueryHits
     connectionManager ! SendMessageToAllConnections(query)
   }
 
@@ -229,7 +236,7 @@ object Gnutella {
    * @return エラーが生じた場合はエラーメッセージを返す．正常終了はNone
    */
   private def recvRespondToReq(sock: Socket): Option[String] = {
-    val input = scala.io.Source.fromInputStream(sock.getInputStream)
+    val input = scala.io.Source.fromInputStream(sock.getInputStream, "utf-8")
 
     // 改行が消えるので追加する
     Try(input.getLines().takeWhile(!_.isEmpty).mkString + "\n\n").toOption match {

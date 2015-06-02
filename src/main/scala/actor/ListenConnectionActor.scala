@@ -50,7 +50,7 @@ class ListenConnectionActor extends Actor {
    * @return requestが正しかった場合はtrue, 不正な場合はfalseを返す
    */
   private def recvConnectionRequest(socket: Socket): Boolean = {
-    val source = scala.io.Source.fromInputStream(socket.getInputStream)
+    val source = scala.io.Source.fromInputStream(socket.getInputStream, "utf-8")
 
     // 改行が消えるので追加
     val msg = source.getLines().takeWhile(!_.isEmpty).mkString + "\n\n"
